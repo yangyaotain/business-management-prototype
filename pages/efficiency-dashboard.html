@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>人效看板 - 业务管理系统</title>
+  <link rel="stylesheet" href="../assets/css/theme.css" />
+  <link rel="stylesheet" href="../assets/css/layout.css" />
+  <link rel="stylesheet" href="../assets/css/dashboard-controls.css" />
+  <link rel="stylesheet" href="../assets/css/efficiency-dashboard.css" />
+</head>
+<body data-page="efficiency-dashboard">
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <div class="app-brand">
+        <div class="brand-mark">业</div>
+        <div class="brand-copy">
+          <strong>业务管理系统</strong>
+          <span>Business Management</span>
+        </div>
+      </div>
+      <nav class="app-menu" id="appMenu" aria-label="主菜单"></nav>
+      <div class="sidebar-scope">
+        <span>当前原型范围</span>
+        <strong>人效看板 · 三级人效分析</strong>
+      </div>
+    </aside>
+
+    <main class="app-main">
+      <header class="app-topbar">
+        <div class="topbar-left">
+          <button type="button" class="icon-only-btn" id="sidebarToggle" aria-label="收起侧边菜单" title="收起或展开侧边菜单">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+          </button>
+          <div class="topbar-title">
+            <strong>人效看板</strong>
+            <span id="topbarPageSubtitle">部门负责人 · 部门人效视图</span>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <button type="button" class="user-trigger" aria-expanded="false">
+            <div class="avatar" id="currentUserAvatar">陈</div>
+            <div class="user-copy">
+              <strong id="currentUserName">陈建</strong>
+              <span id="currentUserRole">部门负责人</span>
+            </div>
+            <span class="chevron"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></span>
+          </button>
+        </div>
+      </header>
+
+      <section class="app-content">
+        <div class="efficiency-page">
+          <header class="page-header efficiency-page-header">
+            <div class="page-title">
+              <div class="breadcrumb" id="efficiencyBreadcrumb" aria-label="当前位置"></div>
+              <h1 id="efficiencyPageTitle">部门人效看板</h1>
+              <p id="efficiencyPageDescription">从部门整体查看各业务组的人效表现，并逐级下钻至业务组和个人。</p>
+            </div>
+            <div class="page-actions efficiency-page-actions" id="efficiencyPageActions"></div>
+          </header>
+
+          <section class="panel dashboard-control-panel" aria-label="演示身份与统计条件">
+            <div class="dashboard-role-row">
+              <div class="dashboard-control-copy">
+                <span class="field-label">演示身份</span>
+                <p>正式系统按登录人权限自动进入对应层级，以下切换仅用于原型演示。</p>
+              </div>
+              <div class="dashboard-role-tabs" id="efficiencyRoleTabs" aria-label="切换演示身份"></div>
+            </div>
+            <div class="dashboard-filter-row">
+              <div class="dashboard-control-copy">
+                <span class="field-label">统计周期</span>
+                <p id="efficiencyScopeHint">当前查看代理业务部在所选统计周期的人效数据。</p>
+              </div>
+              <div class="dashboard-extra-filters">
+                <div class="dashboard-period-controls">
+                  <div class="dashboard-period-tabs" id="efficiencyPeriodTypeTabs" aria-label="切换统计周期模式">
+                    <button type="button" class="dashboard-period-tab active" data-period-type="月度" aria-pressed="true">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>
+                      月度
+                    </button>
+                    <button type="button" class="dashboard-period-tab" data-period-type="季度" aria-pressed="false">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3v9h9M12 12 6 18"/></svg>
+                      季度
+                    </button>
+                  </div>
+                  <label class="dashboard-period-value">
+                    <span class="sr-only">选择统计周期</span>
+                    <select class="form-select" id="efficiencyPeriodSelect" aria-label="选择统计周期"></select>
+                  </label>
+                </div>
+                <label class="dashboard-filter-field dashboard-inline-filter efficiency-business-filter">
+                  <span class="field-label">业务类型</span>
+                  <select class="form-select" id="efficiencyBusinessTypeSelect" aria-label="选择业务类型"></select>
+                </label>
+              </div>
+            </div>
+          </section>
+
+          <div id="efficiencyContent" aria-live="polite"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../assets/js/navigation.js"></script>
+  <script src="../assets/js/common.js"></script>
+  <script src="../assets/js/efficiency-dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>专项工作 - 业务管理系统</title>
+  <link rel="stylesheet" href="../assets/css/theme.css" />
+  <link rel="stylesheet" href="../assets/css/layout.css" />
+  <link rel="stylesheet" href="../assets/css/special-management.css" />
+</head>
+<body data-page="special-list">
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <div class="app-brand">
+        <div class="brand-mark">业</div>
+        <div class="brand-copy">
+          <strong>业务管理系统</strong>
+          <span>Business Management</span>
+        </div>
+      </div>
+      <nav class="app-menu" id="appMenu" aria-label="主菜单"></nav>
+      <div class="sidebar-scope">
+        <span>当前原型范围</span>
+        <strong>专项创建 · 节点 · 进度 · 审批</strong>
+      </div>
+    </aside>
+
+    <main class="app-main">
+      <header class="app-topbar">
+        <div class="topbar-left">
+          <button type="button" class="icon-only-btn" id="sidebarToggle" aria-label="收起侧边菜单" title="收起或展开侧边菜单">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+          </button>
+          <div class="topbar-title">
+            <strong>专项工作</strong>
+            <span>年度专项工作创建、节点提醒与进度跟踪</span>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <button type="button" class="user-trigger" aria-expanded="false">
+            <div class="avatar">张</div>
+            <div class="user-copy"><strong>张明</strong><span>业务组长</span></div>
+            <span class="chevron"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></span>
+          </button>
+        </div>
+      </header>
+
+      <section class="app-content">
+        <div class="page-header">
+          <div class="page-title">
+            <div class="breadcrumb">
+              <span>首页</span>
+              <span>/</span>
+              <span>专项管理</span>
+              <span>/</span>
+              <span class="current">专项工作</span>
+            </div>
+            <h1>专项工作</h1>
+            <p>统一维护专项信息、目标节点、责任分工和周期进展，审批通过的节点记录自动锁定。</p>
+          </div>
+          <div class="page-actions">
+            <button type="button" class="primary-btn" id="specialCreateButton">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+              新建专项
+            </button>
+          </div>
+        </div>
+
+        <section class="panel special-filter-panel" aria-label="专项工作筛选">
+          <div class="special-filter-copy">
+            <span class="special-filter-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6 7v5l-4 2v-7L4 5z"/></svg>
+            </span>
+            <div><strong>专项工作筛选</strong><span>按年度、工作方向和状态查看专项条目。</span></div>
+          </div>
+          <div class="special-filter-fields">
+            <label class="special-filter-field">
+              <span>所属年度</span>
+              <select class="form-select" id="specialYearFilter">
+                <option value="2026">2026年</option>
+                <option value="2025">2025年</option>
+              </select>
+            </label>
+            <label class="special-filter-field special-direction-field">
+              <span>工作方向</span>
+              <select class="form-select" id="specialDirectionFilter">
+                <option value="all">全部方向</option>
+              </select>
+            </label>
+            <label class="special-filter-field">
+              <span>专项状态</span>
+              <select class="form-select" id="specialStatusFilter">
+                <option value="all">全部状态</option>
+                <option value="not-started">未开始</option>
+                <option value="in-progress">进行中</option>
+                <option value="completed">已完成</option>
+              </select>
+            </label>
+            <label class="special-filter-field">
+              <span>进度状态</span>
+              <select class="form-select" id="specialHealthFilter">
+                <option value="all">全部状态</option>
+                <option value="ahead">提前</option>
+                <option value="normal">正常</option>
+                <option value="delayed">延迟</option>
+              </select>
+            </label>
+          </div>
+        </section>
+
+        <section class="panel special-list-panel">
+          <div class="panel-head special-list-head">
+            <div>
+              <h2>年度专项工作清单</h2>
+              <p>专项名称可查看完整信息；主责任人可填报进展，牵头人负责节点审批。</p>
+            </div>
+            <span class="special-panel-meta" id="specialListCount">0项专项</span>
+          </div>
+          <div class="special-table-wrap">
+            <table class="special-table">
+              <thead>
+                <tr>
+                  <th>专项工作</th>
+                  <th>工作方向</th>
+                  <th>实际 / 计划进度</th>
+                  <th>专项状态</th>
+                  <th>进度状态</th>
+                  <th>当前节点</th>
+                  <th>完成期限</th>
+                  <th>牵头人</th>
+                  <th>主责任人</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="specialListBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <div class="drawer-mask hidden" id="specialDetailMask"></div>
+  <aside class="drawer special-detail-drawer hidden" id="specialDetailDrawer" role="dialog" aria-modal="true" aria-labelledby="specialDetailTitle">
+    <div class="drawer-head">
+      <div>
+        <h2 id="specialDetailTitle">专项详情</h2>
+        <p id="specialDetailSubtitle"></p>
+      </div>
+      <button type="button" class="icon-only-btn" id="specialDetailClose" aria-label="关闭专项详情">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="special-detail-tabs" id="specialDetailTabs" aria-label="切换专项详情内容">
+      <button type="button" class="active" data-detail-tab="overview">专项概览</button>
+      <button type="button" data-detail-tab="nodes">节点进度</button>
+      <button type="button" data-detail-tab="records">进展记录</button>
+      <button type="button" data-detail-tab="approvals">审批记录</button>
+    </div>
+    <div class="drawer-body" id="specialDetailBody"></div>
+    <div class="drawer-foot">
+      <button type="button" class="ghost-btn" data-close-special-detail>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        关闭
+      </button>
+      <button type="button" class="secondary-btn" id="specialStatusRequestButton">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.7L4 8"/><path d="M4 4v4h4M12 8v4l3 2"/></svg>
+        申请调整状态
+      </button>
+      <button type="button" class="secondary-btn" id="specialEditButton">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 20 4.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20z"/><path d="m13.5 7.5 3 3"/></svg>
+        编辑专项
+      </button>
+      <button type="button" class="primary-btn" id="specialProgressButton">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M11 20V4M17 20v-7M22 20H2"/></svg>
+        填报进度
+      </button>
+    </div>
+  </aside>
+
+  <div class="drawer-mask hidden" id="specialEditMask"></div>
+  <aside class="drawer special-edit-drawer hidden" id="specialEditDrawer" role="dialog" aria-modal="true" aria-labelledby="specialEditTitle">
+    <div class="drawer-head">
+      <div>
+        <h2 id="specialEditTitle">新建专项</h2>
+        <p>维护专项基本信息、目标节点、提醒时间与责任分工。</p>
+      </div>
+      <button type="button" class="icon-only-btn" id="specialEditClose" aria-label="关闭专项编辑">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <form class="special-edit-form" id="specialEditForm">
+      <div class="drawer-body">
+        <section class="special-form-section">
+          <div class="special-section-head">
+            <span>1</span>
+            <div><h3>基本信息</h3><p>确定专项所属年度、工作方向和主要工作内容。</p></div>
+          </div>
+          <div class="form-grid">
+            <label class="field">
+              <span>所属年度<span class="required-mark">*</span></span>
+              <select id="specialFormYear" required>
+                <option value="2026">2026年</option>
+                <option value="2025">2025年</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>工作方向<span class="required-mark">*</span></span>
+              <select id="specialFormDirection" required></select>
+            </label>
+            <label class="field full">
+              <span>价值说明<span class="required-mark">*</span></span>
+              <textarea id="specialFormValue" rows="3" required placeholder="请输入专项工作价值"></textarea>
+            </label>
+            <label class="field full">
+              <span>专项工作名称<span class="required-mark">*</span></span>
+              <input type="text" id="specialFormName" required placeholder="请输入专项工作名称" />
+            </label>
+            <label class="field full">
+              <span>主要工作内容<span class="required-mark">*</span></span>
+              <textarea id="specialFormContent" rows="4" required placeholder="请输入专项主要工作内容"></textarea>
+            </label>
+            <label class="field">
+              <span>起始时间<span class="required-mark">*</span></span>
+              <input type="date" id="specialFormStart" required />
+            </label>
+            <label class="field">
+              <span>最终完成期限<span class="required-mark">*</span></span>
+              <input type="date" id="specialFormDeadline" required />
+            </label>
+          </div>
+        </section>
+
+        <section class="special-form-section">
+          <div class="special-section-head">
+            <span>2</span>
+            <div><h3>目标与成效</h3><p>记录目标说明及次数、数量、百分比或节点型目标。</p></div>
+          </div>
+          <div class="form-grid">
+            <label class="field full">
+              <span>目标/成效说明<span class="required-mark">*</span></span>
+              <textarea id="specialFormTargetDescription" rows="3" required placeholder="请输入专项目标或预期成效"></textarea>
+            </label>
+            <label class="field">
+              <span>目标类型<span class="required-mark">*</span></span>
+              <select id="specialFormTargetType" required>
+                <option value="次数">次数</option>
+                <option value="数量">数量</option>
+                <option value="百分比">百分比</option>
+                <option value="节点">节点</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>目标值<span class="required-mark">*</span></span>
+              <input type="number" id="specialFormTargetValue" min="0" step="0.1" required />
+            </label>
+            <label class="field full">
+              <span>单位<span class="required-mark">*</span></span>
+              <input type="text" id="specialFormTargetUnit" required placeholder="如：场、份、个、%" />
+            </label>
+          </div>
+        </section>
+
+        <section class="special-form-section">
+          <div class="special-section-head special-node-section-head">
+            <div class="special-section-title">
+              <span>3</span>
+              <div><h3>工作节点与提醒</h3><p>完成期限生成默认提醒，也可逐节点调整提醒时间。</p></div>
+            </div>
+            <button type="button" class="secondary-btn special-add-node" id="specialAddNodeButton">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+              添加节点
+            </button>
+          </div>
+          <div class="special-node-editor" id="specialNodeEditor"></div>
+        </section>
+
+        <section class="special-form-section">
+          <div class="special-section-head">
+            <span>4</span>
+            <div><h3>责任分工</h3><p>牵头人负责节点审批，主责任人负责定期填报进展。</p></div>
+          </div>
+          <div class="form-grid">
+            <label class="field">
+              <span>牵头人<span class="required-mark">*</span></span>
+              <select id="specialFormLeader" required></select>
+            </label>
+            <label class="field">
+              <span>主责任人<span class="required-mark">*</span></span>
+              <select id="specialFormOwner" required></select>
+            </label>
+            <div class="field full">
+              <span>辅责任人/协同人</span>
+              <div class="special-assistant-options" id="specialAssistantOptions"></div>
+            </div>
+          </div>
+        </section>
+      </div>
+      <div class="drawer-foot">
+        <button type="button" class="ghost-btn" data-close-special-edit>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+          取消
+        </button>
+        <button type="submit" class="primary-btn">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h12l2 2v14H5z"/><path d="M8 4v6h8V4M8 20v-6h8v6"/></svg>
+          保存专项
+        </button>
+      </div>
+    </form>
+  </aside>
+
+  <div class="modal-mask hidden" id="specialProgressMask"></div>
+  <section class="modal special-progress-modal hidden" id="specialProgressModal" role="dialog" aria-modal="true" aria-labelledby="specialProgressTitle">
+    <div class="modal-head">
+      <div><h3 id="specialProgressTitle">填报进度</h3><p id="specialProgressSubtitle"></p></div>
+      <button type="button" class="modal-close" id="specialProgressClose" aria-label="关闭进度填报">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <form id="specialProgressForm">
+      <div class="modal-body">
+        <div class="form-grid">
+          <label class="field">
+            <span>填报周期<span class="required-mark">*</span></span>
+            <input type="month" id="specialProgressPeriod" required />
+          </label>
+          <label class="field">
+            <span>关联节点<span class="required-mark">*</span></span>
+            <select id="specialProgressNode" required></select>
+          </label>
+          <label class="field full">
+            <span>本期完成情况<span class="required-mark">*</span></span>
+            <textarea id="specialProgressCurrent" rows="4" required placeholder="请输入本期已完成工作和指标情况"></textarea>
+          </label>
+          <label class="field">
+            <span>当前完成进度<span class="required-mark">*</span></span>
+            <input type="number" id="specialProgressValue" min="0" max="100" step="1" required />
+          </label>
+          <label class="field">
+            <span>相关附件</span>
+            <input type="file" id="specialProgressAttachment" />
+          </label>
+          <label class="field full">
+            <span>下周期开展计划<span class="required-mark">*</span></span>
+            <textarea id="specialProgressNext" rows="3" required placeholder="请输入下周期计划"></textarea>
+          </label>
+        </div>
+        <div class="special-submit-tip">
+          提交后进入牵头人审批；审批通过后记录与关联节点锁定，并同步更新专项进度。
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="ghost-btn" data-close-progress>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+          取消
+        </button>
+        <button type="submit" class="primary-btn">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12 20 4l-4 16-5-6-7-2z"/><path d="m11 14 4-5"/></svg>
+          提交审批
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <div class="modal-mask hidden" id="specialStatusMask"></div>
+  <section class="modal small hidden" id="specialStatusModal" role="dialog" aria-modal="true" aria-labelledby="specialStatusTitle">
+    <div class="modal-head">
+      <div><h3 id="specialStatusTitle">申请调整状态</h3><p>手动调整专项状态需提交审批后生效。</p></div>
+      <button type="button" class="modal-close" id="specialStatusClose" aria-label="关闭状态调整">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <form id="specialStatusForm">
+      <div class="modal-body">
+        <div class="form-grid one-column">
+          <label class="field">
+            <span>调整为<span class="required-mark">*</span></span>
+            <select id="specialStatusTarget" required>
+              <option value="not-started">未开始</option>
+              <option value="in-progress">进行中</option>
+              <option value="completed">已完成</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>调整原因<span class="required-mark">*</span></span>
+            <textarea id="specialStatusReason" rows="4" required placeholder="请说明手动调整状态的原因"></textarea>
+          </label>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="ghost-btn" data-close-status>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+          取消
+        </button>
+        <button type="submit" class="primary-btn">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12 20 4l-4 16-5-6-7-2z"/><path d="m11 14 4-5"/></svg>
+          提交审批
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <script src="../assets/js/navigation.js"></script>
+  <script src="../assets/js/common.js"></script>
+  <script src="../assets/js/special-management.js"></script>
+</body>
+</html>

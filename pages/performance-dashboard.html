@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>绩效看板 - 业务管理系统</title>
+  <link rel="stylesheet" href="../assets/css/theme.css" />
+  <link rel="stylesheet" href="../assets/css/layout.css" />
+  <link rel="stylesheet" href="../assets/css/dashboard-controls.css" />
+  <link rel="stylesheet" href="../assets/css/performance-dashboard.css" />
+</head>
+<body data-page="performance-dashboard">
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <div class="app-brand">
+        <div class="brand-mark">业</div>
+        <div class="brand-copy">
+          <strong>业务管理系统</strong>
+          <span>Business Management</span>
+        </div>
+      </div>
+      <nav class="app-menu" id="appMenu" aria-label="主菜单"></nav>
+      <div class="sidebar-scope">
+        <span>当前原型范围</span>
+        <strong>部门 / 业务组绩效看板</strong>
+      </div>
+    </aside>
+
+    <main class="app-main">
+      <header class="app-topbar">
+        <div class="topbar-left">
+          <button type="button" class="icon-only-btn" id="sidebarToggle" aria-label="收起侧边菜单" title="收起或展开侧边菜单">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+          </button>
+          <div class="topbar-title">
+            <strong>绩效看板</strong>
+            <span id="performanceTopbarSubtitle">部门负责人 · 部门绩效视图</span>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <button type="button" class="user-trigger" aria-expanded="false">
+            <div class="avatar" id="performanceUserAvatar">陈</div>
+            <div class="user-copy"><strong id="performanceUserName">陈建</strong><span id="performanceUserRole">部门负责人</span></div>
+            <span class="chevron"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></span>
+          </button>
+        </div>
+      </header>
+
+      <section class="app-content">
+        <div class="page-header">
+          <div class="page-title">
+            <div class="breadcrumb">
+              <span>首页</span>
+              <span>/</span>
+              <span class="current">绩效看板</span>
+            </div>
+            <h1 id="performancePageTitle">代理业务部绩效看板</h1>
+            <p id="performancePageDescription">汇总部门及各业务组的实际完成值、目标值与挑战值，及时识别未达目标指标。</p>
+          </div>
+          <div class="page-actions">
+            <button type="button" class="primary-btn" id="openPerformanceConfig">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+              设置绩效指标
+            </button>
+          </div>
+        </div>
+
+        <section class="panel dashboard-control-panel" aria-label="演示身份与绩效筛选条件">
+          <div class="dashboard-role-row">
+            <div class="dashboard-control-copy">
+              <span class="field-label">演示身份</span>
+              <p>原型按身份切换部门或所属业务组的绩效查看范围。</p>
+            </div>
+            <div class="dashboard-role-tabs" id="performanceRoleTabs" aria-label="切换演示身份"></div>
+          </div>
+          <div class="dashboard-filter-row">
+            <div class="dashboard-control-copy">
+              <span class="field-label">统计周期</span>
+              <p>月度和季度目标分别检视，不混用实际值、目标值与挑战值。</p>
+            </div>
+            <div class="dashboard-extra-filters performance-filter-controls">
+              <div class="dashboard-period-controls">
+                <div class="dashboard-period-tabs" id="performancePeriodTypeTabs" aria-label="切换统计周期模式">
+                  <button type="button" class="dashboard-period-tab active" data-period-type="月度" aria-pressed="true">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>
+                    月度
+                  </button>
+                  <button type="button" class="dashboard-period-tab" data-period-type="季度" aria-pressed="false">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3v9h9M12 12 6 18"/></svg>
+                    季度
+                  </button>
+                </div>
+                <label class="dashboard-period-value">
+                  <span class="sr-only">选择统计周期</span>
+                  <select class="form-select" id="performancePeriodSelect"></select>
+                </label>
+              </div>
+              <label class="dashboard-filter-field dashboard-inline-filter">
+                <span class="field-label">业务组</span>
+                <select class="form-select" id="performanceGroupSelect" disabled></select>
+              </label>
+              <label class="dashboard-filter-field dashboard-inline-filter">
+                <span class="field-label">指标分类</span>
+                <select class="form-select" id="performanceCategorySelect">
+                  <option value="all">全部分类</option>
+                  <option value="客户赋能">客户赋能</option>
+                  <option value="运营效能">运营效能</option>
+                  <option value="能力建设">能力建设</option>
+                </select>
+              </label>
+              <label class="dashboard-filter-field dashboard-inline-filter">
+                <span class="field-label">达成状态</span>
+                <select class="form-select" id="performanceStatusSelect">
+                  <option value="all">全部状态</option>
+                  <option value="abnormal">异常</option>
+                  <option value="target">达成目标</option>
+                  <option value="challenge">达成挑战</option>
+                </select>
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <section class="performance-summary-grid" id="performanceSummary" aria-label="绩效概览"></section>
+
+        <section class="performance-overview-grid">
+          <article class="panel performance-group-panel">
+            <div class="panel-head">
+              <div>
+                <h2 id="performanceGroupTitle">各业务组绩效达成情况</h2>
+                <p id="performanceGroupDescription">按指标达标率比较各业务组，不混合不同单位的实际值。</p>
+              </div>
+              <span class="performance-panel-meta" id="performanceGroupMeta">4个业务组</span>
+            </div>
+            <div class="performance-group-comparison" id="performanceGroupComparison"></div>
+          </article>
+
+          <article class="panel performance-exception-panel">
+            <div class="panel-head">
+              <div>
+                <h2>异常指标</h2>
+                <p id="performanceExceptionDescription">展示当前范围内未达到目标值的指标。</p>
+              </div>
+              <span class="status-tag risk" id="performanceExceptionCount">0项</span>
+            </div>
+            <div class="performance-exception-list" id="performanceExceptionList"></div>
+          </article>
+        </section>
+
+        <section class="panel performance-table-panel">
+          <div class="panel-head performance-table-head">
+            <div>
+              <h2 id="performanceTableTitle">部门绩效指标</h2>
+              <p id="performanceTableDescription">实际值与目标值、挑战值统一对比，点击指标名称查看周期趋势与业务组明细。</p>
+            </div>
+            <span class="performance-panel-meta" id="performanceResultCount">0项指标</span>
+          </div>
+          <div class="performance-table-wrap">
+            <table class="performance-table">
+              <thead>
+                <tr>
+                  <th>绩效指标</th>
+                  <th>统计周期</th>
+                  <th>实际完成值</th>
+                  <th>目标值</th>
+                  <th>挑战值</th>
+                  <th>达成率</th>
+                  <th>目标差距</th>
+                  <th>达成状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="performanceTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <div class="drawer-mask hidden" id="performanceDetailMask"></div>
+  <aside class="drawer performance-detail-drawer hidden" id="performanceDetailDrawer" role="dialog" aria-modal="true" aria-labelledby="performanceDetailTitle">
+    <div class="drawer-head">
+      <div>
+        <h2 id="performanceDetailTitle">指标详情</h2>
+        <p id="performanceDetailSubtitle"></p>
+      </div>
+      <button type="button" class="icon-only-btn" id="closePerformanceDetail" aria-label="关闭指标详情">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="drawer-body" id="performanceDetailBody"></div>
+    <div class="drawer-foot">
+      <button type="button" class="ghost-btn" data-close-detail>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        关闭
+      </button>
+      <button type="button" class="secondary-btn" id="editPerformanceTarget">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 20 4.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20z"/><path d="m13.5 7.5 3 3"/></svg>
+        调整目标
+      </button>
+    </div>
+  </aside>
+
+  <div class="drawer-mask hidden" id="performanceConfigMask"></div>
+  <aside class="drawer performance-config-drawer hidden" id="performanceConfigDrawer" role="dialog" aria-modal="true" aria-labelledby="performanceConfigTitle">
+    <div class="drawer-head">
+      <div>
+        <h2 id="performanceConfigTitle">设置绩效指标</h2>
+        <p>目标值与挑战值由业务方维护，实际完成值由指标结果统一呈现。</p>
+      </div>
+      <button type="button" class="icon-only-btn" id="closePerformanceConfig" aria-label="关闭绩效指标设置">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <form class="performance-config-form" id="performanceConfigForm">
+      <div class="drawer-body">
+        <section class="performance-form-section">
+          <div class="performance-form-section-head">
+            <span>1</span>
+            <div><h3>适用范围</h3><p>确定指标所属年度、配置范围与业务组。</p></div>
+          </div>
+          <div class="form-grid">
+            <label class="field">
+              <span>绩效年度<span class="required-mark">*</span></span>
+              <select id="configYear" required>
+                <option value="2026">2026年</option>
+                <option value="2025">2025年</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>配置范围<span class="required-mark">*</span></span>
+              <select id="configScope" required>
+                <option value="department">部门</option>
+                <option value="group">业务组</option>
+              </select>
+            </label>
+            <label class="field full" id="configGroupField">
+              <span>业务组<span class="required-mark">*</span></span>
+              <select id="configGroup"></select>
+            </label>
+          </div>
+        </section>
+
+        <section class="performance-form-section">
+          <div class="performance-form-section-head">
+            <span>2</span>
+            <div><h3>指标信息</h3><p>复用业务交付指标口径，不在绩效看板重复建立指标定义。</p></div>
+          </div>
+          <div class="form-grid">
+            <label class="field full">
+              <span>绩效指标<span class="required-mark">*</span></span>
+              <select id="configMetric" required></select>
+            </label>
+            <label class="field">
+              <span>指标分类</span>
+              <input type="text" id="configCategory" disabled />
+            </label>
+            <label class="field">
+              <span>检视周期</span>
+              <input type="text" id="configCycle" disabled />
+            </label>
+            <label class="field">
+              <span>指标单位</span>
+              <input type="text" id="configUnit" disabled />
+            </label>
+            <label class="field">
+              <span>判定方向</span>
+              <select id="configDirection" disabled>
+                <option value="high">越高越好</option>
+                <option value="low">越低越好</option>
+              </select>
+            </label>
+            <label class="field full">
+              <span>指标口径</span>
+              <textarea id="configDefinition" rows="3" disabled></textarea>
+            </label>
+          </div>
+        </section>
+
+        <section class="performance-form-section">
+          <div class="performance-form-section-head">
+            <span>3</span>
+            <div><h3>目标设置</h3><p>挑战值未达成不判定异常，未达到目标值才进入异常清单。</p></div>
+          </div>
+          <div class="form-grid">
+            <label class="field">
+              <span>目标值<span class="required-mark">*</span></span>
+              <input type="number" id="configTarget" min="0" step="0.1" required />
+            </label>
+            <label class="field">
+              <span>挑战值<span class="required-mark">*</span></span>
+              <input type="number" id="configChallenge" min="0" step="0.1" required />
+            </label>
+          </div>
+          <div class="performance-rule-tip" id="performanceRuleTip"></div>
+        </section>
+      </div>
+      <div class="drawer-foot">
+        <button type="button" class="ghost-btn" data-close-config>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+          取消
+        </button>
+        <button type="submit" class="primary-btn">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h12l2 2v14H5z"/><path d="M8 4v6h8V4M8 20v-6h8v6"/></svg>
+          保存配置
+        </button>
+      </div>
+    </form>
+  </aside>
+
+  <script src="../assets/js/navigation.js"></script>
+  <script src="../assets/js/common.js"></script>
+  <script src="../assets/js/performance-dashboard.js"></script>
+</body>
+</html>

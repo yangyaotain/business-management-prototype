@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>客户评价 - 业务管理系统</title>
+  <link rel="stylesheet" href="../assets/css/theme.css" />
+  <link rel="stylesheet" href="../assets/css/layout.css" />
+  <link rel="stylesheet" href="../assets/css/dashboard-controls.css" />
+  <link rel="stylesheet" href="../assets/css/customer-evaluation.css" />
+</head>
+<body data-page="customer-evaluation">
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <div class="app-brand">
+        <div class="brand-mark">业</div>
+        <div class="brand-copy">
+          <strong>业务管理系统</strong>
+          <span>Business Management</span>
+        </div>
+      </div>
+      <nav class="app-menu" id="appMenu" aria-label="主菜单"></nav>
+      <div class="sidebar-scope">
+        <span>当前页面范围</span>
+        <strong>评价回收分析 · 润汇采数据</strong>
+      </div>
+    </aside>
+
+    <main class="app-main">
+      <header class="app-topbar">
+        <div class="topbar-left">
+          <button type="button" class="icon-only-btn" id="sidebarToggle" aria-label="收起侧边菜单" title="收起或展开侧边菜单">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+          </button>
+          <div class="topbar-title">
+            <strong>客户评价</strong>
+            <span id="topbarPageSubtitle">部门负责人 · 部门评价视图</span>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <button type="button" class="user-trigger" aria-expanded="false">
+            <div class="avatar" id="ceUserAvatar">陈</div>
+            <div class="user-copy"><strong id="ceUserName">陈建</strong><span id="ceUserRole">部门负责人</span></div>
+            <span class="chevron"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></span>
+          </button>
+        </div>
+      </header>
+
+      <section class="app-content ce-page">
+        <div class="page-header">
+          <div class="page-title">
+            <div class="breadcrumb">
+              <span>首页</span><span>/</span><span>经营管理</span><span>/</span><span class="current">客户评价</span>
+            </div>
+            <h1>评价回收分析</h1>
+            <p>分析客户平均分、评分结构与主要问题类型，帮助业务组识别服务表现和重点改进方向。</p>
+          </div>
+          <div class="ce-source-note">
+            <span class="ce-source-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>
+            </span>
+            <div><span>数据来源</span><strong>润汇采</strong></div>
+          </div>
+        </div>
+
+        <section class="panel dashboard-control-panel ce-filter-panel" aria-label="演示身份与评价筛选条件">
+          <div class="dashboard-role-row">
+            <div class="dashboard-control-copy">
+              <span class="field-label">演示身份</span>
+              <p id="ceRoleHint">原型按身份切换部门、业务组和个人的可查看范围。</p>
+            </div>
+            <div class="dashboard-role-tabs" id="ceRoleTabs" aria-label="切换演示身份"></div>
+          </div>
+          <div class="dashboard-filter-row ce-dashboard-filter-row">
+            <div class="dashboard-control-copy">
+              <span class="field-label">统计周期</span>
+              <p>月度与季度评价分开统计，其他条件按当前身份的可查看范围筛选。</p>
+            </div>
+            <form class="ce-filter-grid" id="ceFilterForm">
+              <div class="dashboard-period-controls ce-period-filter">
+                <div class="dashboard-period-tabs" id="cePeriodTypeTabs" aria-label="切换评价统计周期">
+                  <button type="button" class="dashboard-period-tab active" data-period-type="月度" aria-pressed="true">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>
+                    月度
+                  </button>
+                  <button type="button" class="dashboard-period-tab" data-period-type="季度" aria-pressed="false">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3v9h9M12 12 6 18"/></svg>
+                    季度
+                  </button>
+                </div>
+                <label class="dashboard-period-value">
+                  <span class="sr-only">选择评价统计周期</span>
+                  <select class="form-select" id="cePeriodValueSelect"></select>
+                </label>
+              </div>
+              <label class="ce-filter-field">
+                <span class="field-label">业务组</span>
+                <select class="form-select" id="ceGroupFilter">
+                  <option value="全部">全部业务组</option>
+                  <option value="招标一组">招标一组</option>
+                  <option value="招标二组">招标二组</option>
+                  <option value="造价咨询组">造价咨询组</option>
+                </select>
+              </label>
+              <label class="ce-filter-field">
+                <span class="field-label">业务类型</span>
+                <select class="form-select" id="ceBusinessFilter">
+                  <option value="全部">全部业务类型</option>
+                  <option value="招标代理">招标代理</option>
+                  <option value="造价咨询">造价咨询</option>
+                </select>
+              </label>
+              <label class="ce-filter-field">
+                <span class="field-label">项目经理</span>
+                <select class="form-select" id="ceManagerFilter">
+                  <option value="全部">全部项目经理</option>
+                </select>
+              </label>
+              <label class="ce-filter-field">
+                <span class="field-label">评分分类</span>
+                <select class="form-select" id="ceRatingFilter">
+                  <option value="全部">全部评分</option>
+                  <option value="优秀">优秀（9—10分）</option>
+                  <option value="良好">良好（8—8.9分）</option>
+                  <option value="一般">一般（6—7.9分）</option>
+                  <option value="低分">低分（6分以下）</option>
+                </select>
+              </label>
+              <div class="ce-filter-actions">
+                <button type="reset" class="ghost-btn" id="ceResetButton">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v6h6"/><path d="M5.5 15a7 7 0 1 0 1-8L4 10"/></svg>
+                  重置
+                </button>
+                <button type="submit" class="primary-btn">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+                  查询
+                </button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <section class="ce-summary-grid" id="ceSummaryCards" aria-label="评价概览"></section>
+
+        <section class="ce-analysis-grid primary-analysis">
+          <article class="panel ce-chart-panel">
+            <div class="panel-head">
+              <div>
+                <h2>客户平均分趋势</h2>
+                <p id="ceTrendDescription">按月展示有效评价平均分</p>
+              </div>
+              <span class="status-tag normal" id="ceTrendTag">整体稳定</span>
+            </div>
+            <div class="ce-chart-body ce-trend-chart" id="ceScoreTrend"></div>
+          </article>
+
+          <article class="panel ce-chart-panel">
+            <div class="panel-head">
+              <div>
+                <h2>评分分布</h2>
+                <p>点击评分分类筛选评价明细</p>
+              </div>
+              <span class="ce-panel-total" id="ceRatingTotal">0份</span>
+            </div>
+            <div class="ce-rating-body" id="ceRatingDistribution"></div>
+          </article>
+        </section>
+
+        <section class="ce-analysis-grid secondary-analysis">
+          <article class="panel ce-chart-panel">
+            <div class="panel-head">
+              <div>
+                <h2>问题类型分析</h2>
+                <p>按问题标签出现次数统计，一份评价可包含多个问题</p>
+              </div>
+              <span class="ce-panel-total" id="ceProblemTotal">0项</span>
+            </div>
+            <div class="ce-chart-body" id="ceProblemAnalysis"></div>
+          </article>
+
+          <article class="panel ce-chart-panel">
+            <div class="panel-head">
+              <div>
+                <h2>业务组评价对比</h2>
+                <p>对比各业务组平均分及有效评价数量</p>
+              </div>
+            </div>
+            <div class="ce-chart-body" id="ceGroupComparison"></div>
+          </article>
+        </section>
+
+        <section class="panel ce-detail-panel">
+          <div class="panel-head ce-detail-head">
+            <div>
+              <h2>评价明细</h2>
+              <p id="ceDetailDescription">展示当前分析条件下的有效评价记录</p>
+            </div>
+            <span class="status-tag pending" id="ceDetailCount" aria-live="polite">共0条</span>
+          </div>
+          <div class="ce-table-context hidden" id="ceTableContext">
+            <span id="ceContextText"></span>
+            <button type="button" id="ceClearContext">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+              清除图表筛选
+            </button>
+          </div>
+          <div class="ce-table-wrap">
+            <table class="ce-table">
+              <thead>
+                <tr>
+                  <th>评价日期</th>
+                  <th>项目／标段</th>
+                  <th>业务组</th>
+                  <th>项目经理</th>
+                  <th>客户名称</th>
+                  <th>综合评分</th>
+                  <th>评分分类</th>
+                  <th>问题类型</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="ceDetailRows"></tbody>
+            </table>
+          </div>
+          <div class="ce-pagination" id="cePagination"></div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <div class="drawer-mask hidden" id="ceDrawerMask"></div>
+  <aside class="drawer hidden ce-detail-drawer" id="ceDetailDrawer" role="dialog" aria-modal="true" aria-labelledby="ceDrawerTitle">
+    <div class="drawer-head">
+      <div>
+        <h2 id="ceDrawerTitle">评价详情</h2>
+        <p id="ceDrawerSubtitle"></p>
+      </div>
+      <button type="button" class="icon-only-btn" id="ceDrawerClose" aria-label="关闭评价详情">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="drawer-body" id="ceDrawerBody"></div>
+    <div class="drawer-foot">
+      <button type="button" class="ghost-btn" id="ceDrawerCloseButton">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        关闭
+      </button>
+    </div>
+  </aside>
+
+  <script src="../assets/js/navigation.js"></script>
+  <script src="../assets/js/common.js"></script>
+  <script src="../assets/js/customer-evaluation.js"></script>
+</body>
+</html>

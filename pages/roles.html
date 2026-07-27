@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>角色管理 - 业务管理系统</title>
+  <link rel="stylesheet" href="../assets/css/theme.css" />
+  <link rel="stylesheet" href="../assets/css/layout.css" />
+  <link rel="stylesheet" href="../assets/css/roles.css" />
+</head>
+<body data-page="roles">
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <div class="app-brand">
+        <div class="brand-mark">业</div>
+        <div class="brand-copy"><strong>业务管理系统</strong><span>Business Management</span></div>
+      </div>
+      <nav class="app-menu" id="appMenu" aria-label="主菜单"></nav>
+      <div class="sidebar-scope"><span>系统管理</span><strong>角色仅配置功能权限</strong></div>
+    </aside>
+
+    <main class="app-main">
+      <header class="app-topbar">
+        <div class="topbar-left">
+          <button type="button" class="icon-only-btn" id="sidebarToggle" aria-label="收起侧边菜单" title="收起或展开侧边菜单">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+          </button>
+          <div class="topbar-title"><strong>角色管理</strong><span>角色维护与功能权限配置</span></div>
+        </div>
+        <div class="topbar-actions">
+          <button type="button" class="user-trigger" aria-expanded="false">
+            <div class="avatar">张</div>
+            <div class="user-copy"><strong>张明</strong><span>业务组长</span></div>
+            <span class="chevron"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></span>
+          </button>
+        </div>
+      </header>
+
+      <section class="app-content role-page">
+        <div class="admin-page-head">
+          <div>
+            <h1>角色管理</h1>
+            <p>维护角色并配置权限，当前角色权限范围仅包含功能权限。</p>
+          </div>
+          <button class="primary-btn" type="button" id="roleAddBtn">新增角色</button>
+        </div>
+
+        <div class="role-layout">
+          <section class="role-panel role-list-panel" aria-label="角色列表">
+            <div class="role-panel-head">
+              <div>
+                <h2>角色列表</h2>
+                <p>右键角色可新增、重命名、删除</p>
+              </div>
+            </div>
+            <div class="role-list" id="roleList"></div>
+          </section>
+
+          <section class="role-panel permission-panel" aria-label="功能权限配置">
+            <div class="permission-head">
+              <div>
+                <span class="eyebrow">功能权限配置</span>
+                <h2 id="selectedRoleName">业务分析师</h2>
+              </div>
+              <button class="primary-btn" type="button" id="savePermissionBtn">保存权限</button>
+            </div>
+            <div class="permission-body" id="rolePermBody"></div>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="role-ctx hidden" id="roleCtxMenu" role="menu">
+    <button type="button" data-action="add">新增角色</button>
+    <button type="button" data-action="rename">重命名</button>
+    <button type="button" data-action="delete">删除角色</button>
+  </div>
+
+  <div class="modal small hidden" id="roleDeleteModal" role="dialog" aria-modal="true" aria-labelledby="roleDeleteTitle">
+    <div class="modal-content">
+      <div class="modal-head">
+        <h3 id="roleDeleteTitle">删除角色</h3>
+        <button class="modal-close" type="button" id="roleDeleteClose">×</button>
+      </div>
+      <div class="modal-body">
+        <p id="roleDeleteText">确定删除该角色吗？删除后，该角色的权限配置将一并移除。</p>
+      </div>
+      <div class="modal-foot">
+        <button class="secondary-btn" type="button" id="roleDeleteCancel">取消</button>
+        <button class="danger-btn" type="button" id="roleDeleteConfirm">删除</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/js/navigation.js"></script>
+  <script src="../assets/js/common.js"></script>
+  <script src="../assets/js/roles.js"></script>
+</body>
+</html>

@@ -1,0 +1,242 @@
+.dashboard-control-panel {
+  margin-bottom: 14px;
+  padding: 0;
+}
+
+.dashboard-role-row,
+.dashboard-filter-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 67px;
+  padding: 13px 16px;
+}
+
+.dashboard-role-row {
+  border-bottom: 1px solid var(--line);
+}
+
+.dashboard-control-copy {
+  min-width: 260px;
+}
+
+.dashboard-control-copy .field-label {
+  margin-bottom: 0;
+}
+
+.dashboard-control-copy p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.dashboard-role-tabs,
+.dashboard-period-controls,
+.dashboard-period-tabs,
+.dashboard-extra-filters {
+  display: flex;
+  align-items: center;
+}
+
+.dashboard-role-tabs,
+.dashboard-extra-filters {
+  justify-content: flex-end;
+}
+
+.dashboard-role-tabs {
+  gap: 7px;
+}
+
+.dashboard-role-tab,
+.dashboard-period-tab {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 13px;
+  color: #7d899b;
+  background: #f8fafc;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition:
+    color 0.16s ease,
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    transform 0.16s ease;
+}
+
+.dashboard-role-tab:hover,
+.dashboard-period-tab:hover {
+  color: var(--primary);
+  background: var(--primary-hover-bg);
+}
+
+.dashboard-role-tab:active,
+.dashboard-period-tab:active {
+  transform: translateY(1px);
+}
+
+.dashboard-role-tab.active,
+.dashboard-period-tab.active {
+  color: var(--primary);
+  background: var(--primary-soft);
+  border-color: var(--primary-border-soft);
+}
+
+.dashboard-role-tab:focus-visible,
+.dashboard-period-tab:focus-visible {
+  outline: 2px solid rgba(var(--primary-rgb), 0.28);
+  outline-offset: 2px;
+}
+
+.dashboard-role-tab svg,
+.dashboard-period-tab svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.dashboard-filter-row {
+  align-items: flex-end;
+}
+
+.dashboard-period-controls {
+  gap: 10px;
+}
+
+.dashboard-period-tabs {
+  gap: 6px;
+}
+
+.dashboard-period-value {
+  min-width: 152px;
+}
+
+.dashboard-period-value .form-select {
+  width: 100%;
+  min-height: 36px;
+}
+
+.dashboard-extra-filters {
+  flex: 1;
+  gap: 10px;
+  min-width: 0;
+}
+
+.dashboard-filter-field {
+  min-width: 118px;
+}
+
+.dashboard-inline-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.dashboard-inline-filter > .field-label,
+.dashboard-inline-filter > span:first-child {
+  flex: 0 0 auto;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.dashboard-inline-filter .form-select {
+  flex: 1;
+  min-width: 132px;
+}
+
+.dashboard-filter-field > .field-label,
+.dashboard-filter-field > span:first-child {
+  margin-bottom: 5px;
+}
+
+.dashboard-filter-field.dashboard-inline-filter > .field-label,
+.dashboard-filter-field.dashboard-inline-filter > span:first-child {
+  margin-bottom: 0;
+}
+
+.dashboard-filter-field .form-select {
+  width: 100%;
+  min-width: 118px;
+}
+
+.dashboard-filter-field select:disabled {
+  color: #98a2b3;
+  background: #f8fafc;
+  cursor: not-allowed;
+}
+
+@media (max-width: 1180px) {
+  .dashboard-role-row,
+  .dashboard-filter-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .dashboard-control-copy {
+    min-width: 0;
+  }
+
+  .dashboard-role-tabs,
+  .dashboard-extra-filters {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .dashboard-extra-filters {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 760px) {
+  .dashboard-role-tabs,
+  .dashboard-period-controls,
+  .dashboard-period-tabs,
+  .dashboard-extra-filters {
+    width: 100%;
+  }
+
+  .dashboard-role-tabs,
+  .dashboard-period-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .dashboard-period-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .dashboard-period-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-role-tab,
+  .dashboard-period-tab {
+    width: 100%;
+    padding: 0 9px;
+  }
+
+  .dashboard-period-value,
+  .dashboard-filter-field {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .dashboard-inline-filter {
+    align-items: center;
+  }
+}

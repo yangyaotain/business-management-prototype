@@ -1,0 +1,33 @@
+.reports-page {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+.report-data-badge {
+  min-width: 164px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 12px;
+  color: #526173;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  box-shadow: var(--soft-shadow);
+}
+
+.report-data-badge span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.report-data-badge strong {
+  color: var(--heading);
+  font-size: 12px;
+}
+
+.report-business-filter {
+  min-width: 210px;
+}
