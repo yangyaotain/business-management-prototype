@@ -38,6 +38,9 @@
   --font-size-body: 13px;
   --font-size-control: 13px;
   --font-size-section: 14px;
+  --font-size-panel-title: 15px;
+  --font-size-page-title: 23px;
+  --font-size-dialog-title: 18px;
   --sidebar-width: 236px;
   --sidebar-collapsed-width: 76px;
   --topbar-height: 64px;

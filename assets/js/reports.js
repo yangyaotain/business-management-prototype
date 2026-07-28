@@ -9,6 +9,14 @@
     cost:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M6 17l3-6 4 3 5-9"/><circle cx="18" cy="5" r="2"/></svg>',
     general:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg>'
   };
+  const SUMMARY_ICONS={
+    tender:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10M9 2h6v4H9z"/><path d="M6 4H5a2 2 0 0 0-2 2v14h18V6a2 2 0 0 0-2-2h-1"/><path d="M7 11h10M7 15h6"/></svg>',
+    deal:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 12 4-4 4 3 4-3 4 4"/><path d="m7 13 4 4a2 2 0 0 0 3 0l3-4"/><path d="M3 7h4l2-2h6l2 2h4"/></svg>',
+    scale:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16"/><path d="M7 17v-5M12 17V8M17 17V4"/><path d="m6 7 4-3 4 2 4-3"/></svg>',
+    revenue:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 8h8M8 12h8M12 8v9"/><path d="m9 14 3 3 3-3"/></svg>',
+    success:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><path d="m9.5 12 1.7 1.7 3.6-4"/></svg>',
+    alert:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 4.2 2.8 18a2 2 0 0 0 1.8 3h14.8a2 2 0 0 0 1.8-3L13.7 4.2a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>'
+  };
   const roles=[
     { id:"departmentHead", label: "部门负责人", userName:"陈建", avatar:"陈", level:"department", icon:CONTROL_ICONS.department },
     { id:"groupLeader", label: "业务组长", userName:"张明", avatar:"张", level:"group", groupId:"group2", icon:CONTROL_ICONS.leader },
@@ -63,10 +71,27 @@
     ["能力建设","案例贡献度","38份","31份","+22.6%","27份","+40.7%","60份","38份",63,"normal",["优秀案例 8份","有效案例 30份","参与人员 24人","已入库 32份"]],
     ["能力建设","测试通过率","96.2%","94.5%","+1.7pct","92.8%","+3.4pct","≥95%","96.2%",101,"normal",["参加测试 132人次","通过 127人次","未通过 5人次","平均分 93.6分"]]
   ];
+  const reportRecords=[
+    {id:"report-2026-07",name:"代理业务部经营月报【2026年7月】",period:"2026年7月",updatedAt:"2026-08-05 16:28",owner:"陈建",size:"1.6 MB"},
+    {id:"report-2026-06",name:"代理业务部经营月报【2026年6月】",period:"2026年6月",updatedAt:"2026-07-05 11:16",owner:"陈建",size:"1.6 MB"},
+    {id:"report-2026-05",name:"代理业务部经营月报【2026年5月】",period:"2026年5月",updatedAt:"2026-06-05 14:42",owner:"陈建",size:"1.6 MB"},
+    {id:"report-2026-04",name:"代理业务部经营月报【2026年4月】",period:"2026年4月",updatedAt:"2026-05-06 10:18",owner:"陈建",size:"1.6 MB"},
+    {id:"report-2026-03",name:"代理业务部经营月报【2026年3月】",period:"2026年3月",updatedAt:"2026-04-03 17:05",owner:"陈建",size:"1.6 MB"}
+  ];
+  const detailProjectNames=[
+    "华南区域生产物资框架采购","新能源场站设备集中采购","广东区域工程服务采购","智慧园区信息化设备采购",
+    "燃机项目检修服务采购","年度办公设备集中采购","分布式光伏施工采购","储能电站运维服务采购",
+    "环保设施技术改造采购","电厂备品备件框架采购","综合能源项目咨询服务","区域公司车辆租赁采购",
+    "热电联产工程监理采购","风电场道路维护服务采购","数字化平台升级采购","安全生产培训服务采购",
+    "海上风电设备检测采购","年度后勤物业服务采购"
+  ];
+  const DETAIL_PAGE_SIZE=6;
+  const REPORT_TEMPLATE_PATH="../assets/files/代理业务部经营月报【2026年X月】 模板（系统版）.docx";
   const generalMetricNames=["异常数量","一次通过率","质量问题数","质量问题率","客户满意度","关键节点时效","项目完成平均周期"];
   let state={
     level:"department",groupId:null,person:null,category:"全部",role:"departmentHead",
-    periodType:"月度",selectedPeriods:{月度:"2026-07",季度:"2026-Q2"},businessType:"all",openMetric:null
+    periodType:"月度",selectedPeriods:{月度:"2026-07",季度:"2026-Q2"},businessType:"all",openMetric:null,
+    reportKeyword:"",detailMetric:null,detailKeyword:"",detailStatus:"all",detailPage:1,detailRecords:[]
   };
   const $=id=>document.getElementById(id);
   const esc=v=>String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -79,13 +104,43 @@
   }
   function currentPeriodLabel(){return currentPeriod().label;}
   function currentPeriodYear(){return currentPeriod().value.slice(0,4);}
-  function currentReportKind(){return state.periodType==="季度"?"季报":"月报";}
-  function currentReportName(type){
-    return type==="专项报告"
-      ?"业务质效提升专项报告【"+currentPeriodLabel()+"】"
-      :"代理业务部经营"+currentReportKind()+"【"+currentPeriodLabel()+"】";
+  function currentBusinessTypeLabel(){
+    const type=businessTypes.find(item=>item.id===state.businessType)||businessTypes[0];
+    return state.businessType==="all"?"全部业务":type.label+"业务";
   }
-  function scaled(value,index){if(state.level==="department")return value;if(index===0||index===1)return Math.round(parseFloat(value.replace(/,/g,""))/(state.level==="group"?3.2:12))+"个";return value}
+  function metricCurrentValue(metric){
+    if(state.level==="department"||!["招标数量","成交数量"].includes(metric[1]))return metric[2];
+    return Math.round(parseFloat(metric[2].replace(/,/g,""))/(state.level==="group"?3.2:12))+"个";
+  }
+  function visibleMetrics(){
+    return metrics.filter(metric=>(state.category==="全部"||metric[0]===state.category)&&metricMatchesBusiness(metric));
+  }
+  function summaryData(){
+    const source=state.level==="department"?{bid:630,deal:562,scale:64.5,revenue:1505,rate:"89.1%",alerts:10}:activeGroup();
+    const ratio=state.level==="person"?.24:1;
+    return [
+      ["招标数量",Math.round(source.bid*ratio),"个","同比 +7.5%","",SUMMARY_ICONS.tender],
+      ["成交数量",Math.round(source.deal*ratio),"个","环比 +6.2%","",SUMMARY_ICONS.deal],
+      ["交易规模",(source.scale*ratio).toFixed(1),"亿元","同比 +10.8%","",SUMMARY_ICONS.scale],
+      ["营收",Math.round(source.revenue*ratio),"万元","环比 +4.7%","",SUMMARY_ICONS.revenue],
+      ["采购成功率",source.rate,"","高于部门均值","",SUMMARY_ICONS.success],
+      ["异常数量",Math.max(1,Math.round(source.alerts*ratio)),"项","需要跟进","alert",SUMMARY_ICONS.alert]
+    ];
+  }
+  function groupMemberData(){
+    const group=activeGroup();
+    const members=state.role==="member"?["李文"]:group.members;
+    return members.map((name,index)=>({
+      name,
+      role:index===0?"业务组长":"项目经理",
+      bid:48+index*7,
+      deal:43+index*6,
+      scale:Number((4.8+index*.6).toFixed(1)),
+      revenue:116+index*18,
+      qualityIssues:index+1,
+      averageCycle:Number((27.4+index*.8).toFixed(1))
+    }));
+  }
   function renderControls(){
     $("reportRoleTabs").innerHTML=roles.map(role=>'<button type="button" class="dashboard-role-tab '+(state.role===role.id?"active":"")+'" data-role-id="'+role.id+'" aria-pressed="'+String(state.role===role.id)+'">'+role.icon+"<span>"+role.label+"</span></button>").join("");
     $("reportPeriodTypeTabs").querySelectorAll("[data-period-type]").forEach(button=>{
@@ -101,6 +156,7 @@
     $("reportUserRole").textContent=role.label;
     $("topbarPageSubtitle").textContent=role.label+" · "+(state.level==="department"?"部门":state.level==="group"?"业务组":"个人")+"报表视图";
     $("reportPeriodBadge").textContent=currentPeriodLabel();
+    $("reportBackButton").classList.toggle("hidden",!((state.level==="group"&&state.role==="departmentHead")||(state.level==="person"&&state.role!=="member")));
   }
   function metricMatchesBusiness(metric){
     if(state.businessType==="all")return true;
@@ -117,44 +173,526 @@
     $("reportPageDescription").textContent=state.level==="department"?"查看部门及各业务组指标，点击组名进入业务组报表。":state.level==="group"?"查看业务组整体指标及组员数据，点击姓名进入个人报表。":"查看个人指标、基础组成数据及项目明细。";
   }
   function renderSummary(){
-    const g=state.level==="department"?{bid:630,deal:562,scale:64.5,revenue:1505,rate:"89.1%",alerts:10}:activeGroup();
-    const ratio=state.level==="person"?.24:1;
-    const data=[["招标数量",Math.round(g.bid*ratio),"个","同比 +7.5%"],["成交数量",Math.round(g.deal*ratio),"个","环比 +6.2%"],["交易规模",(g.scale*ratio).toFixed(1),"亿元","同比 +10.8%"],["营收",Math.round(g.revenue*ratio),"万元","环比 +4.7%"],["采购成功率",g.rate,"","高于部门均值"],["异常数量",Math.max(1,Math.round(g.alerts*ratio)),"项","需要跟进","alert"]];
-    $("reportSummaryGrid").innerHTML=data.map(x=>'<article class="card report-summary-card '+(x[4]||"")+'"><span class="report-summary-label">'+x[0]+'</span><div class="report-summary-value"><strong>'+x[1]+'</strong><span>'+x[2]+'</span></div><div class="report-summary-foot"><span>'+esc(scopeLabel())+'</span><em>'+x[3]+"</em></div></article>").join("");
+    const data=summaryData();
+    $("reportSummaryGrid").innerHTML=data.map(x=>'<article class="card report-summary-card '+(x[4]||"")+'"><span class="report-summary-label">'+x[0]+'</span><span class="report-summary-icon" aria-hidden="true">'+x[5]+'</span><div class="report-summary-value"><strong>'+x[1]+'</strong><span>'+x[2]+'</span></div><div class="report-summary-foot"><span>'+esc(scopeLabel())+'</span><em>'+x[3]+"</em></div></article>").join("");
   }
   function renderOrganization(){
     const panel=$("organizationPanel");
     if(state.level==="person"){panel.classList.add("hidden");return} panel.classList.remove("hidden");
     if(state.level==="department"){
-      $("organizationPanelTitle").textContent="业务组指标对比";$("organizationPanelDescription").textContent="点击业务组名称进入本组报表";$("organizationCount").textContent="共 "+groups.length+" 个业务组";
+      $("organizationPanelTitle").textContent="业务组报表概览";$("organizationPanelDescription").textContent="横向比较各业务组核心报表指标，点击业务组名称进入本组报表。";$("organizationCount").textContent=groups.length+" 个业务组";
       $("organizationTableHead").innerHTML="<tr><th>业务组</th><th>负责人</th><th>招标数量</th><th>成交数量</th><th>交易规模</th><th>营收</th><th>采购成功率</th><th>异常数量</th></tr>";
-      $("organizationTableBody").innerHTML=groups.map(g=>'<tr><td><button class="organization-link" data-group="'+g.id+'">'+g.name+'</button></td><td>'+g.leader+'</td><td>'+g.bid+'个</td><td>'+g.deal+'个</td><td>'+g.scale+'亿元</td><td>'+g.revenue+'万元</td><td><span class="change-up">'+g.rate+'</span></td><td><span class="'+(g.alerts>2?"change-down":"")+'">'+g.alerts+"项</span></td></tr>").join("");
+      $("organizationTableBody").innerHTML=groups.map(g=>'<tr><td><button type="button" class="organization-link dashboard-organization-link" data-group="'+g.id+'"><span>'+g.name+'</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button></td><td>'+g.leader+'</td><td>'+g.bid+'个</td><td>'+g.deal+'个</td><td>'+g.scale+'亿元</td><td>'+g.revenue+'万元</td><td><span class="change-up">'+g.rate+'</span></td><td><span class="'+(g.alerts>2?"change-down":"")+'">'+g.alerts+"项</span></td></tr>").join("");
     }else{
-      const g=activeGroup(), members=state.role==="member"?["李文"]:g.members;
+      const members=groupMemberData();
       $("organizationPanelTitle").textContent="组员数据";$("organizationPanelDescription").textContent=state.role==="member"?"普通组员只显示本人数据":"点击姓名进入个人报表";$("organizationCount").textContent="共 "+members.length+" 人";
       $("organizationTableHead").innerHTML="<tr><th>姓名</th><th>角色</th><th>招标数量</th><th>成交数量</th><th>交易规模</th><th>营收</th><th>质量问题</th><th>平均周期</th></tr>";
-      $("organizationTableBody").innerHTML=members.map((n,i)=>'<tr><td><button class="person-link" data-person="'+n+'">'+n+'</button></td><td>'+(i===0?"业务组长":"项目经理")+'</td><td>'+(48+i*7)+'个</td><td>'+(43+i*6)+'个</td><td>'+(4.8+i*.6).toFixed(1)+'亿元</td><td>'+(116+i*18)+'万元</td><td>'+(i+1)+'项</td><td>'+(27.4+i*.8).toFixed(1)+"天</td></tr>").join("");
+      $("organizationTableBody").innerHTML=members.map(member=>'<tr><td><button class="person-link" data-person="'+member.name+'">'+member.name+'</button></td><td>'+member.role+'</td><td>'+member.bid+'个</td><td>'+member.deal+'个</td><td>'+member.scale+'亿元</td><td>'+member.revenue+'万元</td><td>'+member.qualityIssues+'项</td><td>'+member.averageCycle+"天</td></tr>").join("");
     }
   }
   function renderMetrics(){
     const cats=["全部","业务规模","客户赋能","质量时效","能力建设"];
     $("metricCategoryTabs").innerHTML=cats.map(c=>'<button type="button" class="'+(state.category===c?"active":"")+'" data-category="'+c+'">'+c+"</button>").join("");
-    const list=metrics.filter(m=>(state.category==="全部"||m[0]===state.category)&&metricMatchesBusiness(m));
-    $("metricReportBody").innerHTML=list.map((m,i)=>{
-      const open=state.openMetric===m[1],current=scaled(m[2],i);
+    const list=visibleMetrics();
+    $("metricReportBody").innerHTML=list.map(m=>{
+      const open=state.openMetric===m[1],current=metricCurrentValue(m);
       return '<tr class="metric-row '+m[10]+'"><td class="sticky-name"><button class="metric-toggle '+(open?"open":"")+'" data-metric="'+m[1]+'">'+ICON+'<span>'+m[1]+'</span></button><span class="metric-name-meta">'+m[0]+' · '+scopeLabel()+'</span></td><td>'+current+'</td><td>'+m[3]+'</td><td class="mom-col '+(m[4].startsWith("-")?"change-down":"change-up")+'">'+m[4]+'</td><td>'+m[5]+'</td><td class="yoy-col '+(m[6].startsWith("-")?"change-down":"change-up")+'">'+m[6]+'</td><td>'+m[7]+'</td><td>'+m[8]+'</td><td class="progress-cell"><div class="progress-inline"><span><i style="width:'+Math.min(m[9],100)+'%"></i></span><em>'+m[9]+'%</em></div></td><td class="sticky-action"><button class="table-action" data-detail="'+m[1]+'">查看明细</button></td></tr>'+(open?'<tr class="detail-composition"><td colspan="10"><div class="composition-box">'+m[11].map(x=>{const p=x.split(" ");return '<div class="composition-item"><span>'+p[0]+'</span><strong>'+p.slice(1).join(" ")+"</strong></div>"}).join("")+"</div></td></tr>":"");
     }).join("");
   }
+  function exportOverviewMetadata(){
+    return [
+      ["统计周期",currentPeriodLabel()],
+      ["角色身份",activeRole().label],
+      ["当前用户",activeRole().userName],
+      ["业务类型",currentBusinessTypeLabel()],
+      ["当前层级",state.level==="department"?"部门":state.level==="group"?"业务组":"个人"],
+      ["数据范围",scopeLabel()],
+      ["指标分类",state.category],
+      ["导出时间",new Date().toLocaleString("zh-CN",{hour12:false})]
+    ];
+  }
+  function appendStyledExportSheet(workbook,name,config){
+    const {title,metadata=[],headers,rows,widths}=config;
+    const worksheet=workbook.addWorksheet(name);
+    const borderColor={argb:"FFD0D5DD"};
+    const thinBorder={
+      top:{style:"thin",color:borderColor},
+      left:{style:"thin",color:borderColor},
+      bottom:{style:"thin",color:borderColor},
+      right:{style:"thin",color:borderColor}
+    };
+    worksheet.properties.defaultRowHeight=20;
+    worksheet.pageSetup={
+      paperSize:9,
+      orientation:headers.length>8?"landscape":"portrait",
+      fitToPage:true,
+      fitToWidth:1,
+      fitToHeight:0,
+      margins:{left:.35,right:.35,top:.5,bottom:.5,header:.2,footer:.2}
+    };
+    widths.forEach((width,index)=>{worksheet.getColumn(index+1).width=width});
+
+    const titleRow=worksheet.addRow([title]);
+    worksheet.mergeCells(titleRow.number,1,titleRow.number,headers.length);
+    titleRow.height=30;
+    const titleCell=titleRow.getCell(1);
+    titleCell.font={name:"Microsoft YaHei",size:15,bold:true,color:{argb:"FFFFFFFF"}};
+    titleCell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF1F4E78"}};
+    titleCell.alignment={horizontal:"center",vertical:"middle"};
+    for(let column=1;column<=headers.length;column+=1){
+      const cell=titleRow.getCell(column);
+      cell.border=thinBorder;
+      cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF1F4E78"}};
+    }
+
+    metadata.forEach(([label,value])=>{
+      const row=worksheet.addRow([label,value]);
+      if(headers.length>2)worksheet.mergeCells(row.number,2,row.number,headers.length);
+      row.height=21;
+      for(let column=1;column<=headers.length;column+=1){
+        const cell=row.getCell(column);
+        cell.font={name:"Microsoft YaHei",size:10,color:{argb:"FF344054"},bold:column===1};
+        cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:column===1?"FFD9EAF7":"FFFFFFFF"}};
+        cell.alignment={horizontal:column===1?"center":"left",vertical:"middle"};
+        cell.border=thinBorder;
+      }
+    });
+    if(metadata.length){
+      const spacer=worksheet.addRow([]);
+      spacer.height=8;
+    }
+
+    const headerRow=worksheet.addRow(headers);
+    headerRow.height=24;
+    for(let column=1;column<=headers.length;column+=1){
+      const cell=headerRow.getCell(column);
+      cell.font={name:"Microsoft YaHei",size:10,bold:true,color:{argb:"FFFFFFFF"}};
+      cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF4472C4"}};
+      cell.alignment={horizontal:"center",vertical:"middle",wrapText:true};
+      cell.border=thinBorder;
+    }
+
+    rows.forEach((values,index)=>{
+      const row=worksheet.addRow(values);
+      row.height=21;
+      for(let column=1;column<=headers.length;column+=1){
+        const cell=row.getCell(column);
+        cell.font={name:"Microsoft YaHei",size:10,color:{argb:"FF344054"}};
+        cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:index%2===0?"FFFFFFFF":"FFF7F9FC"}};
+        cell.alignment={
+          horizontal:typeof cell.value==="number"?"right":"left",
+          vertical:"middle",
+          wrapText:true
+        };
+        cell.border=thinBorder;
+      }
+      const statusColumn=headers.indexOf("指标状态")+1;
+      if(statusColumn>0&&["需关注","异常"].includes(row.getCell(statusColumn).value)){
+        const statusCell=row.getCell(statusColumn);
+        statusCell.font={name:"Microsoft YaHei",size:10,bold:true,color:{argb:"FFB42318"}};
+        statusCell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFFEE4E2"}};
+        statusCell.alignment={horizontal:"center",vertical:"middle"};
+      }
+    });
+
+    worksheet.views=[{state:"frozen",xSplit:0,ySplit:headerRow.number}];
+    worksheet.autoFilter={
+      from:{row:headerRow.number,column:1},
+      to:{row:Math.max(headerRow.number,worksheet.rowCount),column:headers.length}
+    };
+    worksheet.headerFooter.oddFooter="第 &P 页 / 共 &N 页";
+  }
+  async function downloadExcelWorkbook(workbook,fileName){
+    const workbookBuffer=await workbook.xlsx.writeBuffer();
+    const workbookBlob=new Blob([workbookBuffer],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+    const downloadUrl=URL.createObjectURL(workbookBlob);
+    const downloadLink=document.createElement("a");
+    downloadLink.href=downloadUrl;
+    downloadLink.download=fileName;
+    downloadLink.style.display="none";
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    downloadLink.remove();
+    window.setTimeout(()=>URL.revokeObjectURL(downloadUrl),1000);
+  }
+  function organizationExportData(){
+    if(state.level==="department"){
+      return {
+        headers:["业务组","负责人","招标数量（个）","成交数量（个）","交易规模（亿元）","营收（万元）","采购成功率","异常数量（项）"],
+        rows:groups.map(group=>[group.name,group.leader,group.bid,group.deal,group.scale,group.revenue,group.rate,group.alerts]),
+        widths:[18,12,16,16,18,16,16,16]
+      };
+    }
+    if(state.level==="group"){
+      return {
+        headers:["姓名","角色","招标数量（个）","成交数量（个）","交易规模（亿元）","营收（万元）","质量问题（项）","平均周期（天）"],
+        rows:groupMemberData().map(member=>[member.name,member.role,member.bid,member.deal,member.scale,member.revenue,member.qualityIssues,member.averageCycle]),
+        widths:[14,14,16,16,18,16,16,16]
+      };
+    }
+    return {
+      headers:["说明"],
+      rows:[["当前为个人报表，无下级组织数据。"]],
+      widths:[44]
+    };
+  }
+  async function exportCurrentData(){
+    if(!window.ExcelJS){
+      window.showToast("Excel 导出组件加载失败，请刷新页面后重试","error");
+      return;
+    }
+    const exportButton=$("exportDataButton");
+    if(exportButton?.disabled)return;
+    if(exportButton){
+      exportButton.disabled=true;
+      exportButton.setAttribute("aria-busy","true");
+    }
+    try{
+      const workbook=new window.ExcelJS.Workbook();
+      workbook.creator="业务管理系统";
+      workbook.created=new Date();
+      workbook.modified=new Date();
+      workbook.subject="当前报表展示数据导出";
+      workbook.title=scopeLabel()+" "+currentPeriodLabel()+"经营数据";
+
+      appendStyledExportSheet(workbook,"报表概览",{
+        title:"经营数据报表概览",
+        metadata:exportOverviewMetadata(),
+        headers:["指标","当前值","单位","对比说明"],
+        rows:summaryData().map(item=>[item[0],item[1],item[2],item[3]]),
+        widths:[20,18,12,24]
+      });
+
+      const organization=organizationExportData();
+      appendStyledExportSheet(workbook,"组织数据",{
+        title:"组织数据",
+        headers:organization.headers,
+        rows:organization.rows,
+        widths:organization.widths
+      });
+
+      const metricList=visibleMetrics();
+      appendStyledExportSheet(workbook,"指标明细",{
+        title:"指标明细",
+        headers:["数据范围","指标分类","指标名称","当前区间值","上期值","环比","同期值","同比","年度目标","年度累计","完成进度","指标状态"],
+        rows:metricList.map(metric=>[
+          scopeLabel(),metric[0],metric[1],metricCurrentValue(metric),metric[3],metric[4],metric[5],metric[6],
+          metric[7],metric[8],metric[9]+"%",metric[10]==="abnormal"?"需关注":"正常"
+        ]),
+        widths:[18,14,26,16,14,12,14,12,14,14,14,12]
+      });
+
+      const compositionRows=[];
+      metricList.forEach(metric=>{
+        metric[11].forEach(composition=>{
+          const parts=composition.split(" ");
+          compositionRows.push([scopeLabel(),metric[0],metric[1],parts[0],parts.slice(1).join(" ")]);
+        });
+      });
+      appendStyledExportSheet(workbook,"指标组成",{
+        title:"指标基础组成",
+        headers:["数据范围","指标分类","指标名称","组成项","组成值"],
+        rows:compositionRows,
+        widths:[18,14,26,24,18]
+      });
+
+      const safeScope=scopeLabel().replace(/[\\/:*?"<>|]/g,"-");
+      const safePeriod=currentPeriodLabel().replace(/[\\/:*?"<>|]/g,"-");
+      const fileName=safeScope+"经营数据【"+safePeriod+"】.xlsx";
+      await downloadExcelWorkbook(workbook,fileName);
+      window.showToast("已导出“"+fileName+"”");
+    }catch(error){
+      console.error("Excel export failed",error);
+      window.showToast("Excel 导出失败，请稍后重试","error");
+    }finally{
+      if(exportButton){
+        exportButton.disabled=false;
+        exportButton.removeAttribute("aria-busy");
+      }
+    }
+  }
   function modal(content,foot){$("reportOverlayRoot").innerHTML='<div class="modal-mask" data-close-overlay></div><section class="modal wide-modal" role="dialog" aria-modal="true">'+content+(foot?'<div class="modal-foot">'+foot+"</div>":"")+"</section>";document.body.style.overflow="hidden"}
   function closeOverlay(){$("reportOverlayRoot").innerHTML="";document.body.style.overflow=""}
-  function openGenerate(){
-    modal('<div class="modal-head"><div><h3>生成报告</h3><p>按当前筛选范围生成管理报告或专项报告。</p></div><button class="modal-close" data-close-overlay>×</button></div><div class="modal-body"><div class="report-type-grid"><button class="report-type-card active" data-report-type="管理报告"><strong>管理报告</strong><span>按所选统计周期汇总经营、质效和专项数据。</span></button><button class="report-type-card" data-report-type="专项报告"><strong>专项报告</strong><span>围绕指定专项或指标输出专题分析。</span></button></div><div class="report-config-grid"><label class="field"><span>报告周期</span><input value="'+currentPeriodLabel()+'" disabled></label><label class="field"><span>报告范围</span><input value="'+scopeLabel()+'" disabled></label><label class="field full"><span>报告名称</span><input id="reportNameInput" value="'+currentReportName("管理报告")+'"></label><div class="field full"><span>包含章节</span><div class="section-checks"><label class="section-check"><input type="checkbox" checked>工作总述</label><label class="section-check"><input type="checkbox" checked>业务经营</label><label class="section-check"><input type="checkbox" checked>质效管理</label><label class="section-check"><input type="checkbox" checked>专项工作</label><label class="section-check"><input type="checkbox" checked>其他事项</label></div></div><label class="field full"><span>补充说明</span><textarea placeholder="可补充本期重点情况、原因分析和下一步计划"></textarea></label></div></div>','<button class="ghost-btn" data-close-overlay>取消</button><button class="secondary-btn" id="previewReportButton">预览报告</button><button class="primary-btn" id="confirmReportButton">生成 Word</button>');
+  function visibleReportRecords(){
+    const role=activeRole();
+    const reportScope=role.id==="departmentHead"?"全部":role.id==="groupLeader"?activeGroup().name:role.userName;
+    return reportRecords.filter(report=>!state.reportKeyword||report.name.includes(state.reportKeyword)||report.period.includes(state.reportKeyword)||reportScope.includes(state.reportKeyword));
   }
-  function previewReport(){
-    modal('<div class="modal-head"><div><h3>报告预览</h3><p>预览结构按当前'+state.periodType+'统计周期生成。</p></div><button class="modal-close" data-close-overlay>×</button></div><div class="modal-body" style="padding:0"><div class="report-preview-shell"><aside class="report-preview-nav"><strong>章节目录</strong><span>一、工作总述</span><span>二、业务经营</span><span>三、质效管理</span><span>四、专项工作</span><span>五、其他事项</span></aside><div class="report-preview-paper"><h2>'+currentReportName("管理报告")+'</h2><h3>一、工作总述</h3><p>本期部门业务整体运行平稳，交易规模与营收保持增长，采购成功率达到目标要求，个别时效与费用指标仍需持续跟进。</p><h3>二、业务经营</h3><table class="preview-table"><thead><tr><th>指标</th><th>年度目标</th><th>本期完成</th><th>年度累计</th><th>完成进度</th><th>同比</th><th>环比</th></tr></thead><tbody><tr><td>交易规模</td><td>108亿元</td><td>64.5亿元</td><td>64.5亿元</td><td>60%</td><td>+10.8%</td><td>+6.1%</td></tr><tr><td>营收</td><td>2,560万元</td><td>1,505万元</td><td>1,505万元</td><td>59%</td><td>+13.5%</td><td>+4.7%</td></tr></tbody></table></div></div></div>','<button class="ghost-btn" data-close-overlay>关闭</button><button class="primary-btn" id="confirmReportButton">生成 Word</button>');
+  function managedReportScope(){
+    const role=activeRole();
+    return role.id==="departmentHead"?"全部":role.id==="groupLeader"?activeGroup().name:role.userName;
+  }
+  function reportRowsHTML(){
+    const records=visibleReportRecords();
+    const reportScope=managedReportScope();
+    if(!records.length)return '<tr><td colspan="6"><div class="report-management-empty"><strong>未找到匹配报告</strong><span>请调整报告名称或统计周期后重试。</span></div></td></tr>';
+    return records.map(report=>[
+      "<tr><td><div class=\"managed-report-name\"><span>",
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"/><path d="M14 3v5h5M9 12h6M9 16h6"/></svg>',
+      "</span><div><strong>",esc(report.name),"</strong><small>Word 文档 · ",esc(report.size),"</small></div></div></td>",
+      "<td>",esc(report.period),"</td><td>",esc(reportScope),"</td><td>",esc(report.updatedAt),"</td><td>",esc(report.owner),"</td>",
+      '<td><div class="managed-report-actions"><button type="button" class="table-action" data-report-preview="',report.id,'">',
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.5"/></svg>预览</button>',
+      '<button type="button" class="table-action" data-report-export="',report.id,'">',
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>导出</button></div></td></tr>'
+    ].join("")).join("");
+  }
+  function renderReportManagementRows(){
+    const body=$("managedReportTableBody");
+    const count=$("managedReportCount");
+    if(body)body.innerHTML=reportRowsHTML();
+    if(count)count.textContent=visibleReportRecords().length+"份报告";
+  }
+  function openReportManagement(){
+    state.reportKeyword="";
+    modal(
+      '<div class="modal-head"><div><h3>报告管理</h3><p>统一查看、预览和导出当前权限范围内的报告。</p></div><button class="modal-close" data-close-overlay aria-label="关闭">×</button></div>'+
+      '<div class="modal-body report-management-body">'+
+      '<div class="report-management-toolbar"><label class="report-management-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="reportManagementSearch" type="search" placeholder="搜索报告名称、周期或范围" autocomplete="off"></label><span id="managedReportCount"></span></div>'+
+      '<div class="report-table-wrap"><table class="report-table managed-report-table"><thead><tr><th>报告名称</th><th>统计周期</th><th>数据范围</th><th>更新时间</th><th>更新人</th><th>操作</th></tr></thead><tbody id="managedReportTableBody"></tbody></table></div>'+
+      '</div>',
+      '<button class="ghost-btn" data-close-overlay><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>关闭</button>'
+    );
+    renderReportManagementRows();
+  }
+  function openReportPreview(reportId){
+    const report=reportRecords.find(item=>item.id===reportId);
+    if(!report)return;
+    const previewUrl=new URL("report-word-preview.html",window.location.href);
+    previewUrl.searchParams.set("reportId",report.id);
+    previewUrl.searchParams.set("name",report.name);
+    const previewWindow=window.open(previewUrl,"_blank");
+    if(!previewWindow){
+      window.showToast("浏览器已拦截新标签页，请允许弹出窗口后重试");
+      return;
+    }
+    previewWindow.opener=null;
+  }
+  async function exportReport(reportId){
+    const report=reportRecords.find(item=>item.id===reportId);
+    if(!report)return;
+    const fileName=report.name.replace(/[\\/:*?"<>|]/g,"-")+".docx";
+    const templateUrl=new URL(REPORT_TEMPLATE_PATH,window.location.href);
+    window.showToast("正在准备“"+fileName+"”");
+    try{
+      const response=await fetch(templateUrl.href,{cache:"no-store"});
+      if(!response.ok)throw new Error("Template request failed: "+response.status);
+      const templateBlob=await response.blob();
+      const downloadUrl=URL.createObjectURL(templateBlob);
+      const downloadLink=document.createElement("a");
+      downloadLink.href=downloadUrl;
+      downloadLink.download=fileName;
+      downloadLink.style.display="none";
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      downloadLink.remove();
+      window.setTimeout(()=>URL.revokeObjectURL(downloadUrl),1000);
+      window.showToast("已开始下载“"+fileName+"”");
+    }catch(error){
+      if(window.location.protocol==="file:"){
+        const downloadLink=document.createElement("a");
+        downloadLink.href=templateUrl.href;
+        downloadLink.download=fileName;
+        downloadLink.style.display="none";
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        downloadLink.remove();
+        window.showToast("已开始下载“"+fileName+"”");
+        return;
+      }
+      console.error("Word report export failed",error);
+      window.showToast("Word 报告下载失败，请稍后重试","error");
+    }
+  }
+  function detailMetricValue(metricName,index){
+    if(metricName==="异常数量")return index%5===2?"1项":"0项";
+    if(metricName==="交易规模")return (0.8+(index%8)*0.36).toFixed(1)+"亿元";
+    if(metricName==="营收")return 48+(index%9)*9+"万元";
+    if(metricName==="招标文件建议数量")return 1+(index%4)+"条";
+    if(metricName==="开评标审查项目数量")return index%4===0?"2项":"1项";
+    if(metricName==="质量问题数")return index%6===2?"1项":"0项";
+    if(metricName==="投标保证金应退未退笔数"||metricName==="专家费应发未及时发放笔数")return index%7===3?"1笔":"0笔";
+    if(metricName==="项目完成平均周期")return (24.6+(index%7)*1.3).toFixed(1)+"天";
+    if(metricName==="客户满意度")return 90+(index%7)+"分";
+    if(metricName==="案例贡献度")return 1+(index%3)+"份";
+    if(metricName.includes("率")||metricName==="关键节点时效")return (88.4+(index%8)*1.25).toFixed(1)+"%";
+    if(metricName.includes("数量"))return "1个";
+    return index%4===0?"已完成":"正常";
+  }
+  function detailCompletionDate(index){
+    const selectedValue=currentPeriod().value;
+    let year=selectedValue.slice(0,4);
+    let month;
+    if(state.periodType==="月度"){
+      month=selectedValue.slice(5,7);
+    }else{
+      const quarter=Number(selectedValue.slice(-1));
+      month=String(Math.min(12,quarter*3-2+(index%3))).padStart(2,"0");
+    }
+    const day=String(3+(index*3)%25).padStart(2,"0");
+    return year+"-"+month+"-"+day;
+  }
+  function createDetailRecords(metricName){
+    const statuses=["正常","正常","正常","需关注","正常","异常"];
+    const projectStatuses=["已完成","已完成","跟进中","已完成","已完成","已终止"];
+    return detailProjectNames.map((project,index)=>{
+      const group=state.level==="department"?groups[index%groups.length]:activeGroup();
+      const owner=state.level==="person"?state.person:group.members[index%group.members.length];
+      const selectedBusiness=businessTypes.find(item=>item.id===state.businessType);
+      const businessType=state.businessType==="all"?["招标代理","造价咨询","通用业务"][index%3]:selectedBusiness.label+"业务";
+      return {
+        code:"CRCG-"+currentPeriodYear()+"-"+String(index+1).padStart(3,"0"),
+        project,
+        businessType,
+        group:group.name,
+        owner,
+        metricValue:detailMetricValue(metricName,index),
+        projectStatus:projectStatuses[index%projectStatuses.length],
+        metricStatus:statuses[index%statuses.length],
+        completedAt:detailCompletionDate(index)
+      };
+    });
+  }
+  function filteredDetailRecords(){
+    const keyword=state.detailKeyword.toLowerCase();
+    return state.detailRecords.filter(record=>{
+      const matchesKeyword=!keyword||[record.code,record.project,record.businessType,record.group,record.owner]
+        .some(value=>String(value).toLowerCase().includes(keyword));
+      const matchesStatus=state.detailStatus==="all"||record.metricStatus===state.detailStatus;
+      return matchesKeyword&&matchesStatus;
+    });
+  }
+  function detailStatusClass(status){
+    return status==="正常"?"normal":status==="需关注"?"warning":"error";
+  }
+  function renderDetailResults(){
+    const body=$("detailTableBody");
+    const pagination=$("detailPagination");
+    const count=$("detailResultCount");
+    if(!body||!pagination||!count)return;
+    const records=filteredDetailRecords();
+    const pageCount=Math.max(1,Math.ceil(records.length/DETAIL_PAGE_SIZE));
+    state.detailPage=Math.min(Math.max(1,state.detailPage),pageCount);
+    const start=(state.detailPage-1)*DETAIL_PAGE_SIZE;
+    const pageRecords=records.slice(start,start+DETAIL_PAGE_SIZE);
+    count.textContent="共 "+records.length+" 条";
+    body.innerHTML=pageRecords.length?pageRecords.map(record=>[
+      "<tr><td><span class=\"detail-code\">",esc(record.code),"</span></td>",
+      "<td><div class=\"detail-project-cell\"><strong>",esc(record.project),"</strong><small>",esc(record.group)," · ",esc(record.owner),"</small></div></td>",
+      "<td>",esc(record.businessType),"</td><td>",esc(record.metricValue),"</td><td>",esc(record.projectStatus),"</td>",
+      '<td><span class="detail-status-tag ',detailStatusClass(record.metricStatus),'">',esc(record.metricStatus),"</span></td>",
+      "<td>",esc(record.completedAt),"</td></tr>"
+    ].join("")).join(""):'<tr><td colspan="7"><div class="detail-table-empty"><strong>未找到匹配明细</strong><span>请调整查询条件后重试。</span></div></td></tr>';
+    const pageButtons=Array.from({length:pageCount},(_,index)=>{
+      const page=index+1;
+      return '<button type="button" class="detail-page-button '+(page===state.detailPage?"active":"")+'" data-detail-page="'+page+'" aria-label="第 '+page+' 页">'+page+"</button>";
+    }).join("");
+    pagination.innerHTML=[
+      '<button type="button" class="detail-page-button detail-page-nav" data-detail-page="',state.detailPage-1,'"',state.detailPage===1?" disabled":"",
+      '><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>上一页</button>',
+      pageButtons,
+      '<button type="button" class="detail-page-button detail-page-nav" data-detail-page="',state.detailPage+1,'"',state.detailPage===pageCount?" disabled":"",
+      '>下一页<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>'
+    ].join("");
+  }
+  async function exportDetailData(){
+    if(!window.ExcelJS){
+      window.showToast("Excel 导出组件加载失败，请刷新页面后重试","error");
+      return;
+    }
+    const records=filteredDetailRecords();
+    if(!records.length){
+      window.showToast("当前查询条件下没有可导出的明细","error");
+      return;
+    }
+    const exportButton=$("drawerExportButton");
+    if(exportButton?.disabled)return;
+    if(exportButton){
+      exportButton.disabled=true;
+      exportButton.setAttribute("aria-busy","true");
+    }
+    try{
+      const workbook=new window.ExcelJS.Workbook();
+      workbook.creator="业务管理系统";
+      workbook.created=new Date();
+      workbook.modified=new Date();
+      workbook.subject=state.detailMetric+"基础明细";
+      workbook.title=scopeLabel()+" "+currentPeriodLabel()+" "+state.detailMetric+"基础明细";
+      appendStyledExportSheet(workbook,"明细数据",{
+        title:state.detailMetric+"基础明细",
+        metadata:[
+          ["统计周期",currentPeriodLabel()],
+          ["数据范围",scopeLabel()],
+          ["业务类型",currentBusinessTypeLabel()],
+          ["查询关键字",state.detailKeyword||"全部"],
+          ["指标状态",state.detailStatus==="all"?"全部":state.detailStatus],
+          ["导出时间",new Date().toLocaleString("zh-CN",{hour12:false})]
+        ],
+        headers:["项目编号","项目名称","业务类型","业务组","负责人","指标结果","项目状态","指标状态","完成日期"],
+        rows:records.map(record=>[
+          record.code,record.project,record.businessType,record.group,record.owner,record.metricValue,
+          record.projectStatus,record.metricStatus,record.completedAt
+        ]),
+        widths:[19,34,15,18,12,15,14,13,15]
+      });
+      const safeScope=scopeLabel().replace(/[\\/:*?"<>|]/g,"-");
+      const safeMetric=state.detailMetric.replace(/[\\/:*?"<>|]/g,"-");
+      const safePeriod=currentPeriodLabel().replace(/[\\/:*?"<>|]/g,"-");
+      const fileName=safeScope+"_"+safeMetric+"明细【"+safePeriod+"】.xlsx";
+      await downloadExcelWorkbook(workbook,fileName);
+      window.showToast("已导出 "+records.length+" 条明细：“"+fileName+"”");
+    }catch(error){
+      console.error("Detail Excel export failed",error);
+      window.showToast("明细 Excel 导出失败，请稍后重试","error");
+    }finally{
+      if(exportButton){
+        exportButton.disabled=false;
+        exportButton.removeAttribute("aria-busy");
+      }
+    }
   }
   function openDetail(name){
-    modal('<div class="drawer-head"><div><h2>'+esc(name)+'基础明细</h2><p>'+scopeLabel()+' · '+currentPeriodLabel()+'</p></div><button class="modal-close" data-close-overlay>×</button></div><div class="drawer-body"><div class="detail-list">'+[1,2,3,4].map(i=>'<article class="detail-record"><div><strong>CRCG-'+currentPeriodYear()+'-0'+i+' 采购项目</strong><span>招标代理 · '+activeGroup().name+'</span></div><div><strong>'+["已完成","已完成","跟进中","已完成"][i-1]+'</strong><span>项目状态</span></div><div><strong>'+(26+i)+'.'+i+'天</strong><span>完成周期</span></div><div><strong>'+["正常","正常","异常","正常"][i-1]+'</strong><span>指标状态</span></div></article>').join("")+'</div></div>','<button class="ghost-btn" data-close-overlay>关闭</button><button class="secondary-btn" id="drawerExportButton">导出明细</button>');
+    state.detailMetric=name;
+    state.detailKeyword="";
+    state.detailStatus="all";
+    state.detailPage=1;
+    state.detailRecords=createDetailRecords(name);
+    modal([
+      '<div class="drawer-head"><div><h2>',esc(name),'基础明细</h2><p>',esc(scopeLabel())," · ",esc(currentPeriodLabel()),
+      '</p></div><button class="modal-close" data-close-overlay aria-label="关闭">×</button></div>',
+      '<div class="drawer-body detail-drawer-body"><div class="detail-query-bar">',
+      '<label class="detail-query-field detail-query-keyword"><span>关键词</span><div class="detail-search-input">',
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>',
+      '<input id="detailKeywordInput" type="search" placeholder="搜索项目名称、编号、负责人" autocomplete="off"></div></label>',
+      '<label class="detail-query-field"><span>指标状态</span><select id="detailStatusSelect"><option value="all">全部状态</option><option value="正常">正常</option><option value="需关注">需关注</option><option value="异常">异常</option></select></label>',
+      '<button type="button" class="secondary-btn detail-query-button" id="detailSearchButton">',
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>查询</button>',
+      '<button type="button" class="ghost-btn detail-query-button" id="detailResetButton">',
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v6h6M20 20v-6h-6"/><path d="M5.5 15a8 8 0 0 0 13.5 2M18.5 9A8 8 0 0 0 5 7"/></svg>重置</button>',
+      '</div><div class="detail-result-head"><div><strong>明细数据</strong><span id="detailResultCount"></span></div><span>每页 ',DETAIL_PAGE_SIZE,' 条</span></div>',
+      '<div class="table-wrap detail-table-wrap"><table class="report-table detail-data-table"><thead><tr>',
+      '<th>项目编号</th><th>项目名称</th><th>业务类型</th><th>指标结果</th><th>项目状态</th><th>指标状态</th><th>完成日期</th>',
+      '</tr></thead><tbody id="detailTableBody"></tbody></table></div><div class="detail-pagination" id="detailPagination"></div></div>'
+    ].join(""),[
+      '<button class="ghost-btn" data-close-overlay><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17"/></svg>关闭</button>',
+      '<button class="secondary-btn" id="drawerExportButton"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>导出 Excel</button>'
+    ].join(""));
+    renderDetailResults();
+  }
+  function goBack(){
+    if(state.level==="person"&&state.role!=="member"){
+      state.level="group";
+      state.person=null;
+      state.openMetric=null;
+      render();
+      return;
+    }
+    if(state.level==="group"&&state.role==="departmentHead"){
+      state.level="department";
+      state.groupId=null;
+      state.openMetric=null;
+      render();
+    }
   }
   function applyRole(roleId){
     const role=roles.find(item=>item.id===roleId)||roles[0];
@@ -166,7 +704,7 @@
   }
   function render(){renderControls();renderPath();renderSummary();renderOrganization();renderMetrics()}
   document.addEventListener("click",e=>{
-    const group=e.target.closest("[data-group]"),person=e.target.closest("[data-person]"),level=e.target.closest("[data-level]"),cat=e.target.closest("[data-category]"),roleButton=e.target.closest("[data-role-id]"),periodButton=e.target.closest("[data-period-type]"),toggle=e.target.closest("[data-metric]"),detail=e.target.closest("[data-detail]"),reportType=e.target.closest("[data-report-type]");
+    const group=e.target.closest("[data-group]"),person=e.target.closest("[data-person]"),level=e.target.closest("[data-level]"),cat=e.target.closest("[data-category]"),roleButton=e.target.closest("[data-role-id]"),periodButton=e.target.closest("[data-period-type]"),toggle=e.target.closest("[data-metric]"),detail=e.target.closest("[data-detail]"),detailPageButton=e.target.closest("[data-detail-page]"),reportPreview=e.target.closest("[data-report-preview]"),reportExport=e.target.closest("[data-report-export]");
     if(group&&state.role==="departmentHead"){state.level="group";state.groupId=group.dataset.group;state.person=null;render()}
     else if(person&&state.role!=="member"){state.level="person";state.person=person.dataset.person;render()}
     else if(level&&level.dataset.level==="department"&&state.role==="departmentHead"){state.level="department";state.groupId=null;state.person=null;render()}
@@ -176,16 +714,47 @@
     else if(periodButton&&periodButton.dataset.periodType!==state.periodType){state.periodType=periodButton.dataset.periodType;render();window.showToast("已切换为："+state.periodType+"经营报表")}
     else if(toggle){state.openMetric=state.openMetric===toggle.dataset.metric?null:toggle.dataset.metric;renderMetrics()}
     else if(detail)openDetail(detail.dataset.detail);
-    else if(reportType){document.querySelectorAll("[data-report-type]").forEach(card=>card.classList.toggle("active",card===reportType));const input=$("reportNameInput");if(input)input.value=currentReportName(reportType.dataset.reportType)}
-    else if(e.target.closest("#generateReportButton"))openGenerate();
-    else if(e.target.closest("#previewReportButton"))previewReport();
-    else if(e.target.closest("#confirmReportButton")){closeOverlay();window.showToast("报告已生成，正在准备 Word 文件（原型演示）")}
-    else if(e.target.closest("#exportDataButton"))window.showToast("正在导出当前报表数据（原型演示）");
-    else if(e.target.closest("#drawerExportButton"))window.showToast("正在导出基础明细（原型演示）");
+    else if(reportPreview)openReportPreview(reportPreview.dataset.reportPreview);
+    else if(reportExport)exportReport(reportExport.dataset.reportExport);
+    else if(e.target.closest("#reportBackButton"))goBack();
+    else if(e.target.closest("#manageReportButton"))openReportManagement();
+    else if(e.target.closest("#exportDataButton"))exportCurrentData();
+    else if(e.target.closest("#detailSearchButton")){
+      state.detailKeyword=$("detailKeywordInput").value.trim();
+      state.detailStatus=$("detailStatusSelect").value;
+      state.detailPage=1;
+      renderDetailResults();
+    }
+    else if(e.target.closest("#detailResetButton")){
+      state.detailKeyword="";
+      state.detailStatus="all";
+      state.detailPage=1;
+      $("detailKeywordInput").value="";
+      $("detailStatusSelect").value="all";
+      renderDetailResults();
+    }
+    else if(detailPageButton&&!detailPageButton.disabled){
+      state.detailPage=Number(detailPageButton.dataset.detailPage);
+      renderDetailResults();
+    }
+    else if(e.target.closest("#drawerExportButton"))exportDetailData();
     else if(e.target.closest("[data-close-overlay]"))closeOverlay();
+  });
+  document.addEventListener("input",e=>{
+    if(e.target.id!=="reportManagementSearch")return;
+    state.reportKeyword=e.target.value.trim();
+    renderReportManagementRows();
   });
   $("reportPeriodSelect").addEventListener("change",e=>{state.selectedPeriods[state.periodType]=e.target.value;render();window.showToast("统计周期已切换为："+currentPeriodLabel())});
   $("reportBusinessTypeSelect").addEventListener("change",e=>{state.businessType=e.target.value;state.category="全部";state.openMetric=null;render();const type=businessTypes.find(item=>item.id===state.businessType);window.showToast("业务类型已切换为："+(state.businessType==="all"?"全部业务":type.label+"业务"))});
-  document.addEventListener("keydown",e=>{if(e.key==="Escape")closeOverlay()});
+  document.addEventListener("keydown",e=>{
+    if(e.key==="Escape")closeOverlay();
+    else if(e.key==="Enter"&&e.target.id==="detailKeywordInput"){
+      state.detailKeyword=e.target.value.trim();
+      state.detailStatus=$("detailStatusSelect").value;
+      state.detailPage=1;
+      renderDetailResults();
+    }
+  });
   render();
 })();

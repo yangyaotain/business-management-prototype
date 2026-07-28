@@ -139,7 +139,7 @@ body {
   border: 1px solid var(--primary-border-soft);
   border-radius: 999px;
   box-shadow: 0 8px 18px rgba(var(--primary-rgb), 0.055);
-  font-size: 11px;
+  font-size: var(--font-size-secondary);
   font-weight: 600;
 }
 
@@ -354,7 +354,7 @@ body {
   display: block;
   margin-top: 4px;
   color: #d92d20;
-  font-size: 10px;
+  font-size: var(--font-size-secondary);
 }
 
 .password-toggle {
@@ -462,13 +462,13 @@ body {
   background: #f8fafc;
   border: 1px solid var(--line);
   border-radius: 10px;
-  font-size: 10px;
+  font-size: var(--font-size-secondary);
 }
 
 .login-demo strong {
   grid-column: 1 / -1;
   color: #475467;
-  font-size: 11px;
+  font-size: var(--font-size-body);
 }
 
 .login-demo b {
@@ -486,7 +486,7 @@ body {
   background: var(--green-soft);
   border: 1px solid #bbf7d0;
   border-radius: 10px;
-  font-size: 11px;
+  font-size: var(--font-size-secondary);
   font-weight: 700;
 }
 
@@ -525,7 +525,7 @@ body {
   background: transparent;
   border: 0;
   border-radius: 8px;
-  font-size: 11px;
+  font-size: var(--font-size-secondary);
   font-weight: 700;
 }
 
@@ -541,7 +541,7 @@ body {
 
 .recovery-card-head > span {
   color: var(--primary);
-  font-size: 10px;
+  font-size: var(--font-size-secondary);
   font-weight: 800;
   letter-spacing: 0.08em;
 }
@@ -560,7 +560,7 @@ body {
 .recovery-card-head p {
   margin-top: 6px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--font-size-secondary);
   line-height: 1.55;
 }
 
@@ -591,7 +591,7 @@ body {
   background: #fff;
   border: 1px solid #dbe3ed;
   border-radius: 50%;
-  font-size: 10px;
+  font-size: var(--font-size-caption);
   font-weight: 800;
 }
 
@@ -602,12 +602,12 @@ body {
 
 .recovery-step strong {
   color: #64748b;
-  font-size: 10px;
+  font-size: var(--font-size-secondary);
 }
 
 .recovery-step small {
   margin-top: 2px;
-  font-size: 8px;
+  font-size: var(--font-size-caption);
 }
 
 .recovery-step.active > span,
@@ -706,13 +706,13 @@ body {
 
 .recovery-channel strong {
   color: var(--heading);
-  font-size: 10px;
+  font-size: var(--font-size-body);
 }
 
 .recovery-channel small {
   margin-top: 3px;
   color: var(--weak);
-  font-size: 8px;
+  font-size: var(--font-size-caption);
 }
 
 .verification-code-row {
@@ -732,7 +732,7 @@ body {
   background: #fff;
   border: 1px solid var(--primary-border);
   border-radius: 10px;
-  font-size: 10px;
+  font-size: var(--font-size-secondary);
   font-weight: 700;
 }
 
@@ -759,7 +759,7 @@ body {
   background: var(--green-soft);
   border: 1px solid #bbf7d0;
   border-radius: 8px;
-  font-size: 9px;
+  font-size: var(--font-size-secondary);
   font-weight: 500;
   line-height: 1.5;
 }
@@ -778,7 +778,7 @@ body {
 .recovery-support-tip {
   margin: 12px 0 0;
   color: var(--weak);
-  font-size: 9px;
+  font-size: var(--font-size-secondary);
   line-height: 1.55;
   text-align: center;
 }
@@ -817,13 +817,13 @@ body {
 
 .recovery-account-summary small {
   color: var(--weak);
-  font-size: 8px;
+  font-size: var(--font-size-caption);
 }
 
 .recovery-account-summary strong {
   margin-top: 3px;
   color: var(--heading);
-  font-size: 11px;
+  font-size: var(--font-size-body);
 }
 
 .recovery-account-summary em {
@@ -832,7 +832,7 @@ body {
   background: var(--green-soft);
   border: 1px solid #bbf7d0;
   border-radius: 999px;
-  font-size: 8px;
+  font-size: var(--font-size-secondary);
   font-style: normal;
   font-weight: 700;
 }
@@ -851,7 +851,7 @@ body {
   background: #f8fafc;
   border: 1px solid var(--line);
   border-radius: 999px;
-  font-size: 8px;
+  font-size: var(--font-size-caption);
 }
 
 .password-rule-list > span.passed {
@@ -891,7 +891,7 @@ body {
 .recovery-success p {
   margin: 8px auto 20px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--font-size-secondary);
   line-height: 1.65;
 }
 
@@ -904,7 +904,7 @@ body {
   padding-top: 13px;
   color: var(--weak);
   border-top: 1px solid var(--line);
-  font-size: 9px;
+  font-size: var(--font-size-caption);
   text-align: center;
 }
 
@@ -932,7 +932,7 @@ body {
   left: 0;
   margin: 0;
   color: var(--weak);
-  font-size: 10px;
+  font-size: var(--font-size-caption);
   text-align: center;
 }
 

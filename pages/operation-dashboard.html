@@ -62,19 +62,25 @@
             <h1 id="operationPageTitle">代理业务部运营看板</h1>
             <p id="operationPageDescription">查看部门2026年7月运营数据与周期目标，识别各业务组的目标差距和重点风险。</p>
           </div>
-          <div class="operation-data-badge">
-            <span>数据口径</span>
-            <strong id="dataCutoffText">2026年7月</strong>
+          <div class="page-actions">
+            <button type="button" class="secondary-btn hidden" id="operationBackButton">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+              返回上一级
+            </button>
+            <div class="operation-data-badge">
+              <span>数据口径</span>
+              <strong id="dataCutoffText">2026年7月</strong>
+            </div>
           </div>
         </div>
 
-        <section class="panel dashboard-control-panel" aria-label="演示身份与统计条件">
+        <section class="panel dashboard-control-panel" aria-label="角色身份与统计条件">
           <div class="dashboard-role-row">
             <div class="dashboard-control-copy">
-              <span class="field-label">演示身份</span>
+              <span class="field-label">角色身份</span>
               <p>原型按身份切换部门、业务组和个人的可查看范围。</p>
             </div>
-            <div class="dashboard-role-tabs" id="operationRoleTabs" aria-label="切换演示身份"></div>
+            <div class="dashboard-role-tabs" id="operationRoleTabs" aria-label="切换角色身份"></div>
           </div>
           <div class="dashboard-filter-row">
             <div class="dashboard-control-copy">
@@ -121,42 +127,15 @@
 
         <section class="operation-summary-grid" id="operationSummaryGrid" aria-label="核心运营指标"></section>
 
-        <section class="panel operation-scope-panel">
+        <section class="panel operation-scope-panel dashboard-organization-panel">
           <div class="panel-head">
             <div>
-              <h2 id="operationScopePanelTitle">业务组运行情况</h2>
-              <p id="operationScopePanelDescription">点击业务组名称进入本组看板，查看组员和目标完成情况。</p>
+              <h2 id="operationScopePanelTitle">业务组运营概览</h2>
+              <p id="operationScopePanelDescription">横向比较各业务组核心运营指标，点击业务组名称进入本组看板。</p>
             </div>
-            <span class="operation-panel-meta" id="operationScopePanelMeta">4个业务组</span>
+            <span class="operation-panel-meta dashboard-organization-count" id="operationScopePanelMeta">4 个业务组</span>
           </div>
           <div class="operation-scope-panel-body" id="operationScopePanelBody"></div>
-        </section>
-
-        <section class="operation-analysis-grid">
-          <article class="panel operation-comparison-panel">
-            <div class="panel-head operation-analysis-head">
-              <div>
-                <h2 id="operationComparisonTitle">各业务组目标对比</h2>
-                <p id="operationComparisonDescription">比较同一指标的本期实际值与周期目标，避免不同单位混合展示。</p>
-              </div>
-              <label class="operation-comparison-select" id="operationComparisonSelectField">
-                <span class="sr-only">选择对比指标</span>
-                <select class="form-select" id="operationComparisonMetricSelect"></select>
-              </label>
-            </div>
-            <div class="operation-comparison-body" id="operationComparisonBody"></div>
-          </article>
-
-          <article class="panel operation-attention-panel">
-            <div class="panel-head">
-              <div>
-                <h2>未达标指标</h2>
-                <p id="operationAttentionDescription">当前筛选范围内需要重点关注的指标。</p>
-              </div>
-              <span class="status-tag risk" id="operationAttentionCount">0项</span>
-            </div>
-            <div class="operation-attention-list" id="operationAttentionList"></div>
-          </article>
         </section>
 
         <section class="panel operation-metric-panel">
@@ -168,6 +147,36 @@
             <div class="operation-category-tabs" id="operationCategoryTabs" aria-label="切换指标分类"></div>
           </div>
           <div class="operation-metric-panel-body">
+            <div class="operation-metric-toolbar" aria-label="运营指标查询条件">
+              <label class="operation-metric-search">
+                <span class="sr-only">按指标名称查询</span>
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="11" cy="11" r="7"></circle>
+                  <path d="m20 20-4-4"></path>
+                </svg>
+                <input type="search" id="operationMetricSearch" placeholder="请输入指标名称" autocomplete="off" />
+              </label>
+              <div class="operation-metric-toolbar-actions">
+                <label class="operation-metric-status-filter">
+                  <span>状态</span>
+                  <select class="form-select" id="operationMetricStatusFilter" aria-label="筛选指标状态">
+                    <option value="all">全部状态</option>
+                    <option value="unmet">未达成</option>
+                    <option value="completed">完成目标</option>
+                    <option value="exceeded">超出目标</option>
+                    <option value="controlled">控制达标</option>
+                    <option value="risk">超过控制</option>
+                  </select>
+                </label>
+                <span class="operation-metric-result-count" id="operationMetricResultCount" aria-live="polite">筛选结果 0 项</span>
+                <button type="button" class="operation-metric-clear hidden" id="operationMetricClear">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 7h16M9 7V4h6v3M8 11v6M12 11v6M16 11v6M6 7l1 14h10l1-14"></path>
+                  </svg>
+                  <span>清空筛选</span>
+                </button>
+              </div>
+            </div>
             <div class="operation-metric-grid" id="operationMetricGrid"></div>
           </div>
         </section>

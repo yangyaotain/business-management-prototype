@@ -195,9 +195,9 @@
     {
       id: "group-1",
       name: "第一业务组",
-      leader: "李文",
+      leader: "赵倩",
       members: [
-        person("p101", "李文", "业务组长", 46.8, 18.1, 19.2, 12.7),
+        person("p101", "赵倩", "业务组长", 46.8, 18.1, 19.2, 12.7),
         person("p102", "陈晨", "高级项目经理", 42.5, 16.8, 20.5, 11.6),
         person("p103", "王璐", "项目经理", 39.6, 15.2, 22.1, 9.8),
         person("p104", "刘畅", "项目经理", 44.1, 17.5, 18.9, 12.0)
@@ -218,12 +218,24 @@
     {
       id: "group-3",
       name: "非电力业务组",
-      leader: "周敏",
+      leader: "孙岚",
       members: [
-        person("p301", "周敏", "业务组长", 48.6, 18.9, 18.6, 13.8),
+        person("p301", "孙岚", "业务组长", 48.6, 18.9, 18.6, 13.8),
         person("p302", "郑凯", "高级项目经理", 45.4, 17.6, 19.4, 12.5),
         person("p303", "杨帆", "项目经理", 42.8, 16.7, 21.0, 11.3),
         person("p304", "宋妍", "项目经理", 44.6, 17.2, 20.1, 11.9)
+      ]
+    },
+    {
+      id: "group-4",
+      name: "造价业务组",
+      leader: "王军",
+      members: [
+        person("p401", "王军", "业务组长", 41.6, 15.9, 20.8, 10.9),
+        person("p402", "蒋宁", "高级项目经理", 39.8, 15.1, 21.6, 10.1),
+        person("p403", "韩雪", "项目经理", 37.9, 14.4, 22.7, 9.4),
+        person("p404", "冯涛", "项目经理", 40.7, 15.6, 20.3, 10.6),
+        person("p405", "彭佳", "项目经理", 38.8, 14.9, 21.9, 9.8)
       ]
     }
   ];
@@ -394,11 +406,10 @@
     }
 
     const direction = percent > 0 ? "up" : "down";
-    const good = metric.direction === "higher" ? percent > 0 : percent < 0;
     return {
       percent,
       label: "较" + getComparisonTerm() + " " + (percent > 0 ? "+" : "") + percent.toFixed(1) + "%",
-      tone: good ? "good" : "bad",
+      tone: direction,
       direction
     };
   }
@@ -718,27 +729,29 @@
   }
 
   function renderGroupTable() {
-    const period = getCurrentPeriod();
     return [
-      '<section class="panel efficiency-panel">',
+      '<section class="panel efficiency-panel dashboard-organization-panel">',
       '<div class="panel-head"><div><h2>业务组人效概览</h2><p>横向比较各业务组四项人效指标，点击组名进入本组看板</p></div>',
-      '<div class="efficiency-panel-head-actions"><span class="efficiency-count-tag">',
+      '<div class="efficiency-panel-head-actions"><span class="dashboard-organization-count">',
       GROUPS.length,
       " 个业务组</span></div></div>",
-      '<div class="efficiency-table-wrap"><table class="efficiency-table">',
-      '<colgroup><col style="width: 176px" /><col style="width: 72px" /><col /><col /><col /><col /></colgroup>',
-      '<thead><tr><th>业务组</th><th class="people-cell">人数</th>',
+      '<div class="efficiency-table-wrap dashboard-organization-table-wrap"><table class="efficiency-table dashboard-organization-table">',
+      '<colgroup><col style="width: 176px" /><col style="width: 108px" /><col style="width: 76px" /><col /><col /><col /><col /></colgroup>',
+      '<thead><tr><th>业务组</th><th>负责人</th><th class="people-cell">人数</th>',
       METRICS.map((metric) => '<th class="numeric-cell">' + escapeHTML(metric.label) + "</th>").join(""),
       "</tr></thead><tbody>",
       GROUPS.map((group) => [
         "<tr><td>",
-        '<button type="button" class="efficiency-name-button" data-group-id="',
+        '<button type="button" class="efficiency-name-button dashboard-organization-link" data-group-id="',
         group.id,
         '"><span>',
         escapeHTML(group.name),
         "</span>",
         ICONS.arrow,
         "</button></td>",
+        "<td>",
+        escapeHTML(group.leader),
+        "</td>",
         '<td class="people-cell">',
         group.members.length,
         "人</td>",
@@ -750,13 +763,7 @@
         )).join(""),
         "</tr>"
       ].join("")).join(""),
-      "</tbody></table></div>",
-      '<div class="efficiency-definition-note">',
-      ICONS.info,
-      "<span>当前为 ",
-      escapeHTML(period.label),
-      " " + state.periodType + "示例数据。业务组名称、人员归属及正式指标口径以后续业务确认结果为准。</span></div>",
-      "</section>"
+      "</tbody></table></div></section>"
     ].join("");
   }
 

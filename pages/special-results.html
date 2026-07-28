@@ -6,6 +6,7 @@
   <title>专项结果看板 - 业务管理系统</title>
   <link rel="stylesheet" href="../assets/css/theme.css" />
   <link rel="stylesheet" href="../assets/css/layout.css" />
+  <link rel="stylesheet" href="../assets/css/dashboard-controls.css" />
   <link rel="stylesheet" href="../assets/css/special-management.css" />
 </head>
 <body data-page="special-results">
@@ -64,45 +65,45 @@
           </div>
         </div>
 
-        <section class="panel special-filter-panel special-result-filter-panel" aria-label="专项结果筛选">
-          <div class="special-filter-copy">
-            <span class="special-filter-icon">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6 7v5l-4 2v-7L4 5z"/></svg>
-            </span>
-            <div><strong>结果筛选</strong><span>筛选条件同步作用于统计卡片、进度图和专项对比表。</span></div>
-          </div>
-          <div class="special-filter-fields">
-            <label class="special-filter-field">
-              <span>所属年度</span>
-              <select class="form-select" id="specialYearFilter">
-                <option value="2026">2026年</option>
-                <option value="2025">2025年</option>
-              </select>
-            </label>
-            <label class="special-filter-field special-direction-field">
-              <span>工作方向</span>
-              <select class="form-select" id="specialDirectionFilter">
-                <option value="all">全部方向</option>
-              </select>
-            </label>
-            <label class="special-filter-field">
-              <span>专项状态</span>
-              <select class="form-select" id="specialStatusFilter">
-                <option value="all">全部状态</option>
-                <option value="not-started">未开始</option>
-                <option value="in-progress">进行中</option>
-                <option value="completed">已完成</option>
-              </select>
-            </label>
-            <label class="special-filter-field">
-              <span>进度状态</span>
-              <select class="form-select" id="specialHealthFilter">
-                <option value="all">全部状态</option>
-                <option value="ahead">提前</option>
-                <option value="normal">正常</option>
-                <option value="delayed">延迟</option>
-              </select>
-            </label>
+        <section class="panel dashboard-control-panel special-filter-panel special-result-filter-panel" aria-label="专项结果筛选">
+          <div class="dashboard-filter-row">
+            <div class="dashboard-control-copy">
+              <span class="field-label">结果筛选</span>
+              <p>筛选条件同步作用于统计卡片、进度图和专项对比表。</p>
+            </div>
+            <div class="dashboard-extra-filters special-filter-fields">
+              <label class="dashboard-filter-field special-filter-field">
+                <span class="field-label">所属年度</span>
+                <select class="form-select" id="specialYearFilter">
+                  <option value="2026">2026年</option>
+                  <option value="2025">2025年</option>
+                </select>
+              </label>
+              <label class="dashboard-filter-field special-filter-field special-direction-field">
+                <span class="field-label">工作方向</span>
+                <select class="form-select" id="specialDirectionFilter">
+                  <option value="all">全部方向</option>
+                </select>
+              </label>
+              <label class="dashboard-filter-field special-filter-field">
+                <span class="field-label">专项状态</span>
+                <select class="form-select" id="specialStatusFilter">
+                  <option value="all">全部状态</option>
+                  <option value="not-started">未开始</option>
+                  <option value="in-progress">进行中</option>
+                  <option value="completed">已完成</option>
+                </select>
+              </label>
+              <label class="dashboard-filter-field special-filter-field">
+                <span class="field-label">进度状态</span>
+                <select class="form-select" id="specialHealthFilter">
+                  <option value="all">全部状态</option>
+                  <option value="ahead">提前</option>
+                  <option value="normal">正常</option>
+                  <option value="delayed">延迟</option>
+                </select>
+              </label>
+            </div>
           </div>
         </section>
 
@@ -112,7 +113,7 @@
           <div class="panel-head special-chart-head">
             <div>
               <h2>计划完成数量与实际完成数量</h2>
-              <p>按最终完成期限统计计划累计完成专项数，并与实际审批确认完成数量比较。</p>
+              <p>按最终完成期限统计计划累计完成专项数，并与实际完成数量比较。</p>
             </div>
             <div class="special-chart-legend">
               <span><i class="planned"></i>计划完成</span>
@@ -126,7 +127,7 @@
           <div class="panel-head special-list-head">
             <div>
               <h2>单项专项计划与实际进度</h2>
-              <p>计划进度按节点时限计算，实际进度以审批通过的进展记录为准。</p>
+              <p>计划进度按节点时限计算，实际进度以已保存的进展记录为准。</p>
             </div>
             <span class="special-panel-meta" id="specialResultCount">0项专项</span>
           </div>
@@ -148,6 +149,7 @@
               <tbody id="specialResultTableBody"></tbody>
             </table>
           </div>
+          <div class="special-pagination" id="specialResultPagination" aria-label="专项结果分页"></div>
         </section>
       </section>
     </main>
@@ -168,7 +170,6 @@
       <button type="button" class="active" data-detail-tab="overview">专项概览</button>
       <button type="button" data-detail-tab="nodes">节点进度</button>
       <button type="button" data-detail-tab="records">进展记录</button>
-      <button type="button" data-detail-tab="approvals">审批记录</button>
     </div>
     <div class="drawer-body" id="specialDetailBody"></div>
     <div class="drawer-foot">

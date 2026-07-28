@@ -1,5 +1,10 @@
 (function setupSpecialManagement() {
-  const CURRENT_DATE = "2026-07-27";
+  const CURRENT_DATE = "2026-07-28";
+  const PAGE_SIZE = 8;
+  const COMPLETION_TREND_SAMPLE = {
+    planned: [1, 1, 2, 2, 3, 4, 5, 6, 7, 7, 8, 9],
+    actual: [1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2]
+  };
   const PAGE_KEY = document.body.dataset.page;
   const IS_LIST_PAGE = PAGE_KEY === "special-list";
   const IS_RESULT_PAGE = PAGE_KEY === "special-results";
@@ -21,9 +26,7 @@
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16 5-5 4 3 7-8"/><path d="M16 6h4v4"/></svg>',
     paperclip:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 13 6-6a3 3 0 1 1 4 4l-8 8a5 5 0 0 1-7-7l8-8"/></svg>',
-    approve:
-      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>',
-    reject:
+    remove:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>',
     empty:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="17" rx="2"/><path d="M8 2v4M16 2v4M8 11h8M8 15h5"/></svg>'
@@ -63,12 +66,12 @@
       nodes: [
         node("sp001-n1", "完成一季度客户需求收集", "2026-03-20", "2026-03-15", "completed", "已形成培训需求清单。"),
         node("sp001-n2", "完成上半年8场客户培训", "2026-06-30", "2026-06-23", "completed", "已完成8场客户培训。"),
-        node("sp001-n3", "形成重点主题课程包", "2026-09-30", "2026-09-23", "ongoing", "正在完善招标文件编制课程。"),
+        node("sp001-n3", "形成重点主题课程包", "2026-09-30", "2026-07-25", "ongoing", "正在完善招标文件编制课程。"),
         node("sp001-n4", "完成全年培训总结", "2026-12-20", "2026-12-10", "pending", "")
       ],
       records: [
-        record("sp001-r1", "2026年6月", "sp001-n2", "完成2场客户培训，累计完成8场。", 58, "根据客户需求开展电力组专题培训。", "客户培训签到表.pdf", "张明", "2026-06-28 16:20", "approved"),
-        record("sp001-r2", "2026年7月", "sp001-n3", "完成课程框架梳理，补充采购文件编制案例。", 62, "完成课程包初稿并组织内部评审。", "课程框架V1.docx", "张明", "2026-07-25 10:12", "pending")
+        record("sp001-r1", "2026年6月", "sp001-n2", "完成2场客户培训，累计完成8场。", 58, "根据客户需求开展电力组专题培训。", "客户培训签到表.pdf", "张明", "2026-06-28 16:20", "completed"),
+        record("sp001-r2", "2026年7月", "sp001-n3", "完成课程框架梳理，补充采购文件编制案例。", 62, "完成课程包初稿并组织内部评审。", "课程框架V1.docx", "张明", "2026-07-25 10:12", "ongoing")
       ]
     }),
     createSpecial({
@@ -93,7 +96,7 @@
         node("sp002-n4", "完成年度专项报告", "2026-12-15", "2026-12-05", "pending", "")
       ],
       records: [
-        record("sp002-r1", "2026年6月", "sp002-n2", "完成上半年专项报告并提交客户沟通。", 50, "收集第三季度项目数据，确定报告主题。", "上半年专项报告.pdf", "邓小勇", "2026-06-30 09:45", "approved")
+        record("sp002-r1", "2026年6月", "sp002-n2", "完成上半年专项报告并提交客户沟通。", 50, "收集第三季度项目数据，确定报告主题。", "上半年专项报告.pdf", "邓小勇", "2026-06-30 09:45", "completed")
       ]
     }),
     createSpecial({
@@ -118,7 +121,7 @@
         node("sp003-n4", "完成结果复盘", "2026-11-30", "2026-11-20", "pending", "")
       ],
       records: [
-        record("sp003-r1", "2026年6月", "sp003-n2", "完成广东、云南、海南、重庆等单位需求对接。", 42, "推进剩余单位衔接并启动集采实施。", "需求对接清单.xlsx", "邓小勇", "2026-06-29 14:10", "approved")
+        record("sp003-r1", "2026年6月", "sp003-n2", "完成广东、云南、海南、重庆等单位需求对接。", 42, "推进剩余单位衔接并启动集采实施。", "需求对接清单.xlsx", "邓小勇", "2026-06-29 14:10", "completed")
       ]
     }),
     createSpecial({
@@ -145,7 +148,7 @@
         node("sp004-n4", "完成课程计划总结", "2026-06-30", "2026-06-23", "completed", "已完成并归档。")
       ],
       records: [
-        record("sp004-r1", "2026年6月", "sp004-n4", "完成七个主题分享及课程计划总结。", 100, "持续完善课程内容并形成常态化机制。", "培训总结.pdf", "刘其永", "2026-06-28 17:30", "approved")
+        record("sp004-r1", "2026年6月", "sp004-n4", "完成七个主题分享及课程计划总结。", 100, "持续完善课程内容并形成常态化机制。", "培训总结.pdf", "刘其永", "2026-06-28 17:30", "completed")
       ]
     }),
     createSpecial({
@@ -171,8 +174,8 @@
         node("sp005-n4", "完成年度案例库归档", "2026-12-20", "2026-12-10", "pending", "")
       ],
       records: [
-        record("sp005-r1", "2026年6月", "sp005-n2", "累计收集12个案例并完成初步分类。", 60, "继续收集并开展案例质量复核。", "案例目录.xlsx", "崔怀胜", "2026-06-30 11:26", "approved"),
-        record("sp005-r2", "2026年7月", "sp005-n3", "新增4个案例，完成重点案例标签整理。", 68, "组织案例评审，完善分类说明。", "案例标签说明.docx", "崔怀胜", "2026-07-24 15:08", "approved")
+        record("sp005-r1", "2026年6月", "sp005-n2", "累计收集12个案例并完成初步分类。", 60, "继续收集并开展案例质量复核。", "案例目录.xlsx", "崔怀胜", "2026-06-30 11:26", "completed"),
+        record("sp005-r2", "2026年7月", "sp005-n3", "新增4个案例，完成重点案例标签整理。", 68, "组织案例评审，完善分类说明。", "案例标签说明.docx", "崔怀胜", "2026-07-24 15:08", "ongoing")
       ]
     }),
     createSpecial({
@@ -198,8 +201,8 @@
         node("sp006-n4", "完成年度质量总结", "2026-12-18", "2026-12-08", "pending", "")
       ],
       records: [
-        record("sp006-r1", "2026年6月", "sp006-n2", "完成5月合规审核意见整理，形成问题清单。", 48, "分析6月审核意见并梳理需宣贯事项。", "审核问题清单.xlsx", "殷浩", "2026-06-30 18:05", "approved"),
-        record("sp006-r2", "2026年7月", "sp006-n2", "完成上半年问题归类及复盘材料初稿。", 52, "组织复盘宣贯并明确责任人。", "复盘材料初稿.pptx", "殷浩", "2026-07-26 09:18", "pending")
+        record("sp006-r1", "2026年6月", "sp006-n2", "完成5月合规审核意见整理，形成问题清单。", 48, "分析6月审核意见并梳理需宣贯事项。", "审核问题清单.xlsx", "殷浩", "2026-06-30 18:05", "ongoing"),
+        record("sp006-r2", "2026年7月", "sp006-n2", "完成上半年问题归类及复盘材料初稿。", 52, "组织复盘宣贯并明确责任人。", "复盘材料初稿.pptx", "殷浩", "2026-07-26 09:18", "ongoing")
       ]
     }),
     createSpecial({
@@ -226,7 +229,7 @@
         node("sp007-n4", "完成应用情况跟踪", "2026-06-30", "2026-06-23", "completed", "测试通过率100%。")
       ],
       records: [
-        record("sp007-r1", "2026年6月", "sp007-n4", "完成新能源专业知识题库发布和测试，测试通过率100%。", 100, "转入常态化维护并跟踪使用情况。", "题库测试结果.xlsx", "邓小勇", "2026-06-25 16:40", "approved")
+        record("sp007-r1", "2026年6月", "sp007-n4", "完成新能源专业知识题库发布和测试，测试通过率100%。", 100, "转入常态化维护并跟踪使用情况。", "题库测试结果.xlsx", "邓小勇", "2026-06-25 16:40", "completed")
       ]
     }),
     createSpecial({
@@ -251,7 +254,7 @@
         node("sp008-n4", "更新年度政策法规库", "2026-10-31", "2026-10-21", "pending", "")
       ],
       records: [
-        record("sp008-r1", "2026年6月", "sp008-n2", "完成招标投标法修订草案初步分析。", 38, "持续跟踪法规进展，补充合同台账责任分析。", "政策解读初稿.docx", "殷浩", "2026-06-29 19:02", "approved")
+        record("sp008-r1", "2026年6月", "sp008-n2", "完成招标投标法修订草案初步分析。", 38, "持续跟踪法规进展，补充合同台账责任分析。", "政策解读初稿.docx", "殷浩", "2026-06-29 19:02", "ongoing")
       ]
     }),
     createSpecial({
@@ -282,13 +285,16 @@
   let activeDirection = "all";
   let activeStatus = "all";
   let activeHealth = "all";
+  let activeWorkState = "all";
   let activeSpecialId = null;
   let activeDetailTab = "overview";
+  let activeDetailNodeId = null;
+  let listPage = 1;
+  let resultPage = 1;
   let editSpecialId = null;
   let editingNodes = [];
   let customSpecialCounter = 1;
   let customRecordCounter = 1;
-  let customRequestCounter = 1;
 
   const $ = (id) => document.getElementById(id);
 
@@ -296,11 +302,19 @@
     return { type, value, unit, description };
   }
 
-  function node(id, name, dueDate, remindDate, status, noteText) {
-    return { id, name, dueDate, remindDate, status, note: noteText || "" };
+  function node(id, name, dueDate, remindDate, status, noteText, reminderContent) {
+    return {
+      id,
+      name,
+      dueDate,
+      remindDate,
+      status,
+      note: noteText || "",
+      reminderContent: reminderContent || ""
+    };
   }
 
-  function record(id, period, nodeId, current, progressValue, nextPlan, attachment, submitter, submittedAt, approval) {
+  function record(id, period, nodeId, current, progressValue, nextPlan, attachment, submitter, submittedAt, nodeStatus) {
     return {
       id,
       period,
@@ -311,9 +325,7 @@
       attachment,
       submitter,
       submittedAt,
-      approval,
-      approver: approval === "approved" ? "朱乐悦" : "",
-      approvalAt: approval === "approved" ? submittedAt : ""
+      nodeStatus: nodeStatus || "ongoing"
     };
   }
 
@@ -323,7 +335,6 @@
       value: direction ? direction.value : "",
       audit: false,
       completionDate: "",
-      statusRequests: [],
       ...config
     };
   }
@@ -381,15 +392,6 @@
     return map[health] || map.normal;
   }
 
-  function getApprovalMeta(status) {
-    const map = {
-      pending: { label: "待审批", className: "pending" },
-      approved: { label: "已通过", className: "approved" },
-      rejected: { label: "已退回", className: "rejected" }
-    };
-    return map[status] || map.pending;
-  }
-
   function getNodeMeta(status) {
     const map = {
       pending: { label: "未开始", className: "pending" },
@@ -397,6 +399,15 @@
       completed: { label: "已完成", className: "completed" }
     };
     return map[status] || map.pending;
+  }
+
+  function buildReminderContent(itemName, nodeItem) {
+    return "【专项节点提醒】“" + itemName + "”专项的“" + nodeItem.name +
+      "”节点将于" + formatDate(nodeItem.dueDate) + "到期，请按计划推进并及时更新进展。";
+  }
+
+  function getReminderContent(item, nodeItem) {
+    return nodeItem.reminderContent || buildReminderContent(item.name, nodeItem);
   }
 
   function formatDate(value) {
@@ -410,6 +421,25 @@
     return item.nodes.find((nodeItem) => nodeItem.status !== "completed") || item.nodes[item.nodes.length - 1] || null;
   }
 
+  function getWorkState(item) {
+    if (item.status === "completed") return "completed";
+    const currentNode = getCurrentNode(item);
+    if (!currentNode || currentNode.status === "completed") return "completed";
+    if (currentNode.dueDate < CURRENT_DATE) return "overdue";
+    if (currentNode.remindDate <= CURRENT_DATE) return "action";
+    return "normal";
+  }
+
+  function getWorkStateMeta(state) {
+    const map = {
+      action: { label: "待处理", className: "action" },
+      overdue: { label: "已逾期", className: "overdue" },
+      normal: { label: "正常推进", className: "normal" },
+      completed: { label: "已完成", className: "completed" }
+    };
+    return map[state] || map.normal;
+  }
+
   function getFilteredSpecials() {
     return specials.filter((item) => {
       if (String(item.year) !== activeYear) return false;
@@ -418,6 +448,70 @@
       if (activeHealth !== "all" && getHealth(item) !== activeHealth) return false;
       return true;
     });
+  }
+
+  function renderWorkTabs(items) {
+    if (!IS_LIST_PAGE) return;
+    const tabs = [
+      { value: "all", label: "全部" },
+      { value: "action", label: "待处理" },
+      { value: "overdue", label: "已逾期" },
+      { value: "normal", label: "正常推进" },
+      { value: "completed", label: "已完成" }
+    ];
+    $("specialWorkTabs").innerHTML = tabs.map((tab) => {
+      const count = tab.value === "all"
+        ? items.length
+        : items.filter((item) => getWorkState(item) === tab.value).length;
+      return [
+        '<button type="button" class="special-work-tab ',
+        tab.value,
+        activeWorkState === tab.value ? " active" : "",
+        '" data-work-state="',
+        tab.value,
+        '"><span>',
+        escapeHTML(tab.label),
+        "</span><strong>",
+        count,
+        "</strong></button>"
+      ].join("");
+    }).join("");
+  }
+
+  function getPageData(items, requestedPage) {
+    const pageCount = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
+    const page = Math.min(Math.max(requestedPage, 1), pageCount);
+    const start = (page - 1) * PAGE_SIZE;
+    return {
+      page,
+      pageCount,
+      pageItems: items.slice(start, start + PAGE_SIZE)
+    };
+  }
+
+  function renderPagination(containerId, type, page, pageCount, total) {
+    const container = $(containerId);
+    if (!container) return;
+    container.innerHTML = [
+      '<span class="special-page-total">共 ',
+      total,
+      " 项</span>",
+      '<button type="button" class="special-page-button" data-special-page-type="',
+      type,
+      '" data-special-page-action="prev"',
+      page <= 1 ? " disabled" : "",
+      '><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>上一页</button>',
+      '<span class="special-page-info">第 ',
+      page,
+      " / ",
+      pageCount,
+      " 页</span>",
+      '<button type="button" class="special-page-button" data-special-page-type="',
+      type,
+      '" data-special-page-action="next"',
+      page >= pageCount ? " disabled" : "",
+      '>下一页<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>'
+    ].join("");
   }
 
   function populateFilters() {
@@ -457,8 +551,15 @@
 
   function renderList() {
     if (!IS_LIST_PAGE) return;
-    const items = getFilteredSpecials();
+    const baseItems = getFilteredSpecials();
+    renderWorkTabs(baseItems);
+    const items = activeWorkState === "all"
+      ? baseItems
+      : baseItems.filter((item) => getWorkState(item) === activeWorkState);
+    const pageData = getPageData(items, listPage);
+    listPage = pageData.page;
     $("specialListCount").textContent = items.length + "项专项";
+    renderPagination("specialListPagination", "list", listPage, pageData.pageCount, items.length);
     if (!items.length) {
       $("specialListBody").innerHTML = [
         '<tr><td colspan="10"><div class="special-empty">',
@@ -471,13 +572,17 @@
       return;
     }
 
-    $("specialListBody").innerHTML = items.map((item) => {
+    $("specialListBody").innerHTML = pageData.pageItems.map((item) => {
       const direction = getDirection(item.directionId);
       const status = getStatusMeta(item.status);
       const health = getHealthMeta(getHealth(item));
       const currentNode = getCurrentNode(item);
+      const workState = getWorkState(item);
+      const workStateMeta = getWorkStateMeta(workState);
       return [
-        "<tr>",
+        '<tr class="special-work-row ',
+        workState,
+        '">',
         "<td>",
         '<button type="button" class="special-name-link" data-special-detail="',
         escapeAttr(item.id),
@@ -510,12 +615,19 @@
         '">',
         escapeHTML(health.label),
         "</span></td>",
-        '<td><span class="special-current-node" title="',
-        escapeAttr(currentNode ? currentNode.name : "-"),
-        '">',
-        escapeHTML(currentNode ? currentNode.name : "-"),
-        currentNode ? "<small>提醒：" + escapeHTML(formatDate(currentNode.remindDate)) + "</small>" : "",
-        "</span></td>",
+        "<td>",
+        currentNode
+          ? '<div class="special-current-node-state"><div><strong>' +
+            escapeHTML(currentNode.name) +
+            '</strong><span class="special-work-state ' +
+            workStateMeta.className +
+            '">' +
+            escapeHTML(workStateMeta.label) +
+            '</span></div><small>节点期限 ' +
+            escapeHTML(formatDate(currentNode.dueDate)) +
+            "</small></div>"
+          : '<span class="special-current-node-empty">-</span>',
+        "</td>",
         '<td><span class="special-table-date">',
         escapeHTML(formatDate(item.deadline)),
         "</span></td>",
@@ -533,7 +645,11 @@
         "查看</button>",
         item.status !== "completed"
           ? '<button type="button" class="special-row-button primary" data-open-progress="' +
-            escapeAttr(item.id) + '">' + ICONS.progress + "填报</button>"
+            escapeAttr(item.id) + '" data-progress-node="' +
+            escapeAttr(currentNode ? currentNode.id : "") + '">' + ICONS.progress +
+            (workState === "overdue" || workState === "action"
+              ? "立即填报"
+              : "填报") + "</button>"
           : "",
         "</div></td>",
         "</tr>"
@@ -543,7 +659,7 @@
 
   function summaryCard(label, value, unit, foot, tone, icon) {
     return [
-      '<article class="special-summary-card ',
+      '<article class="card special-summary-card ',
       tone || "",
       '">',
       '<div class="special-summary-top"><span>',
@@ -582,13 +698,21 @@
 
   function renderCompletionChart(items) {
     const maximum = Math.max(items.length, 1);
+    const useDefaultSample = activeYear === "2026" &&
+      activeDirection === "all" &&
+      activeStatus === "all" &&
+      activeHealth === "all";
     const months = Array.from({ length: 12 }, (_, index) => {
       const month = index + 1;
-      const planned = items.filter((item) => Number(item.deadline.slice(5, 7)) <= month).length;
-      const actual = items.filter((item) => (
-        item.completionDate &&
-        Number(item.completionDate.slice(5, 7)) <= month
-      )).length;
+      const planned = useDefaultSample
+        ? COMPLETION_TREND_SAMPLE.planned[index]
+        : items.filter((item) => Number(item.deadline.slice(5, 7)) <= month).length;
+      const actual = useDefaultSample
+        ? COMPLETION_TREND_SAMPLE.actual[index]
+        : items.filter((item) => (
+          item.completionDate &&
+          Number(item.completionDate.slice(5, 7)) <= month
+        )).length;
       return { month, planned, actual };
     });
 
@@ -632,7 +756,10 @@
   }
 
   function renderResultTable(items) {
+    const pageData = getPageData(items, resultPage);
+    resultPage = pageData.page;
     $("specialResultCount").textContent = items.length + "项专项";
+    renderPagination("specialResultPagination", "result", resultPage, pageData.pageCount, items.length);
     if (!items.length) {
       $("specialResultTableBody").innerHTML = [
         '<tr><td colspan="9"><div class="special-empty">',
@@ -645,7 +772,7 @@
       return;
     }
 
-    $("specialResultTableBody").innerHTML = items.map((item) => {
+    $("specialResultTableBody").innerHTML = pageData.pageItems.map((item) => {
       const direction = getDirection(item.directionId);
       const healthKey = getHealth(item);
       const health = getHealthMeta(healthKey);
@@ -726,6 +853,20 @@
     ].join("");
   }
 
+  function detailStatusStat(label, meta, type) {
+    return [
+      '<div class="special-detail-stat"><span>',
+      escapeHTML(label),
+      '</span><div class="special-detail-status-value"><span class="special-',
+      type,
+      " ",
+      escapeAttr(meta.className),
+      '">',
+      escapeHTML(meta.label),
+      "</span></div></div>"
+    ].join("");
+  }
+
   function infoItem(label, value, full) {
     return [
       '<div class="special-info-item',
@@ -746,8 +887,8 @@
       '<div class="special-detail-summary">',
       detailStat("实际进度", item.progress + "%"),
       detailStat("计划进度", item.planProgress + "%"),
-      detailStat("专项状态", status.label),
-      detailStat("进度状态", health.label),
+      detailStatusStat("专项状态", status, "status"),
+      detailStatusStat("进度状态", health, "health"),
       detailStat("完成期限", formatDate(item.deadline)),
       "</div>",
       '<section class="special-detail-section"><h3>专项信息</h3>',
@@ -784,6 +925,9 @@
         return [
           '<article class="special-node-item ',
           meta.className,
+          activeDetailNodeId === nodeItem.id ? " focused" : "",
+          '" data-detail-node="',
+          escapeAttr(nodeItem.id),
           '"><span class="special-node-dot"></span>',
           '<div class="special-node-card"><div class="special-node-card-head"><strong>',
           escapeHTML(nodeItem.name),
@@ -794,7 +938,7 @@
           "</span></div>",
           '<div class="special-node-card-meta"><span>完成期限：',
           escapeHTML(formatDate(nodeItem.dueDate)),
-          "</span><span>提醒时间：",
+          "</span><span>消息触发时间：",
           escapeHTML(formatDate(nodeItem.remindDate)),
           "</span></div>",
           nodeItem.note ? "<p>" + escapeHTML(nodeItem.note) + "</p>" : "",
@@ -813,17 +957,17 @@
     return [
       '<div class="special-record-list">',
       records.map((recordItem) => {
-        const approval = getApprovalMeta(recordItem.approval);
         const nodeItem = item.nodes.find((candidate) => candidate.id === recordItem.nodeId);
+        const nodeMeta = getNodeMeta(recordItem.nodeStatus);
         return [
           '<article class="special-record-card"><div class="special-record-head"><div><strong>',
           escapeHTML(recordItem.period),
           "</strong><span>",
           escapeHTML(nodeItem ? nodeItem.name : "未关联节点"),
-          '</span></div><span class="special-approval-status ',
-          approval.className,
+          '</span></div><span class="special-record-status ',
+          nodeMeta.className,
           '">',
-          escapeHTML(approval.label),
+          escapeHTML(nodeMeta.label),
           "</span></div>",
           '<div class="special-record-progress"><span>填报进度</span><div><i style="width:',
           Math.min(recordItem.progress, 100),
@@ -852,79 +996,6 @@
     ].join("");
   }
 
-  function getApprovalEntries(item) {
-    const progressApprovals = item.records.map((recordItem) => ({
-      kind: "record",
-      id: recordItem.id,
-      title: recordItem.period + "进度填报",
-      detail: recordItem.current,
-      applicant: recordItem.submitter,
-      submittedAt: recordItem.submittedAt,
-      approval: recordItem.approval,
-      approver: recordItem.approver,
-      approvalAt: recordItem.approvalAt
-    }));
-    const statusApprovals = item.statusRequests.map((requestItem) => ({
-      kind: "status",
-      id: requestItem.id,
-      title: "专项状态调整申请",
-      detail: "申请调整为“" + getStatusMeta(requestItem.target).label + "”： " + requestItem.reason,
-      applicant: requestItem.applicant,
-      submittedAt: requestItem.submittedAt,
-      approval: requestItem.approval,
-      approver: requestItem.approver,
-      approvalAt: requestItem.approvalAt
-    }));
-    return [...progressApprovals, ...statusApprovals]
-      .sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
-  }
-
-  function renderApprovals(item) {
-    const entries = getApprovalEntries(item);
-    if (!entries.length) {
-      return renderDetailEmpty("暂无审批记录", "进度填报或状态调整申请提交后将在这里展示。");
-    }
-    return [
-      '<div class="special-approval-list">',
-      entries.map((entry) => {
-        const approval = getApprovalMeta(entry.approval);
-        const canApprove = IS_LIST_PAGE && entry.approval === "pending";
-        return [
-          '<article class="special-approval-card"><div class="special-approval-head"><div><strong>',
-          escapeHTML(entry.title),
-          "</strong><span>申请人：",
-          escapeHTML(entry.applicant),
-          " · ",
-          escapeHTML(entry.submittedAt),
-          '</span></div><span class="special-approval-status ',
-          approval.className,
-          '">',
-          escapeHTML(approval.label),
-          "</span></div>",
-          '<div class="special-approval-copy">',
-          escapeHTML(entry.detail),
-          "</div>",
-          '<div class="special-approval-foot"><span>',
-          entry.approver
-            ? "审批人：" + escapeHTML(entry.approver) + " · " + escapeHTML(entry.approvalAt)
-            : "等待牵头人审批",
-          "</span>",
-          canApprove
-            ? '<div class="special-approval-actions">' +
-              '<button type="button" class="special-reject-button" data-approval-action="reject" data-approval-kind="' +
-              escapeAttr(entry.kind) + '" data-approval-id="' + escapeAttr(entry.id) + '">' +
-              ICONS.reject + "退回</button>" +
-              '<button type="button" class="special-approve-button" data-approval-action="approve" data-approval-kind="' +
-              escapeAttr(entry.kind) + '" data-approval-id="' + escapeAttr(entry.id) + '">' +
-              ICONS.approve + "通过</button></div>"
-            : "",
-          "</div></article>"
-        ].join("");
-      }).join(""),
-      "</div>"
-    ].join("");
-  }
-
   function renderDetailEmpty(title, description) {
     return [
       '<div class="special-empty"><span class="special-empty-icon">',
@@ -943,20 +1014,28 @@
     const renderers = {
       overview: renderOverview,
       nodes: renderNodes,
-      records: renderRecords,
-      approvals: renderApprovals
+      records: renderRecords
     };
     $("specialDetailBody").innerHTML = (renderers[activeDetailTab] || renderOverview)(item);
     document.querySelectorAll("[data-detail-tab]").forEach((button) => {
       button.classList.toggle("active", button.dataset.detailTab === activeDetailTab);
     });
+    if (activeDetailTab === "nodes" && activeDetailNodeId) {
+      const focusedNode = Array.from(
+        $("specialDetailBody").querySelectorAll("[data-detail-node]")
+      ).find((nodeElement) => nodeElement.dataset.detailNode === activeDetailNodeId);
+      if (focusedNode) {
+        requestAnimationFrame(() => focusedNode.scrollIntoView({ block: "center", behavior: "smooth" }));
+      }
+    }
   }
 
-  function openDetail(itemId, tabName) {
+  function openDetail(itemId, tabName, nodeId) {
     const item = getSpecial(itemId);
     if (!item) return;
     activeSpecialId = item.id;
     activeDetailTab = tabName || "overview";
+    activeDetailNodeId = nodeId || null;
     $("specialDetailTitle").textContent = item.name;
     $("specialDetailSubtitle").textContent =
       item.year + "年 · " + getDirection(item.directionId).label + " · 牵头人 " + item.leader;
@@ -1010,6 +1089,7 @@
       name: row.querySelector("[data-node-name]").value.trim(),
       dueDate: row.querySelector("[data-node-due]").value,
       remindDate: row.querySelector("[data-node-remind]").value,
+      reminderContent: row.querySelector("[data-node-reminder-content]").value.trim(),
       status: editingNodes[index] ? editingNodes[index].status : "pending",
       note: editingNodes[index] ? editingNodes[index].note : ""
     }));
@@ -1030,10 +1110,14 @@
       '<label><span>提醒时间</span><input type="date" data-node-remind value="',
       escapeAttr(nodeItem.remindDate),
       '" required /></label>',
+      '<label class="special-node-reminder-field"><span>提醒内容</span><textarea data-node-reminder-content rows="2" ',
+      'placeholder="留空时由系统根据专项和节点信息自动生成">',
+      escapeHTML(nodeItem.reminderContent),
+      "</textarea></label>",
       '<button type="button" class="special-remove-node" data-remove-node="',
       index,
       '" aria-label="删除节点">',
-      ICONS.reject,
+      ICONS.remove,
       "</button></div>"
     ].join("")).join("");
   }
@@ -1058,7 +1142,10 @@
     $("specialFormOwner").value = item ? item.owner : "张明";
     renderAssistantOptions(item ? item.assistants.filter((name) => PEOPLE.indexOf(name) >= 0) : []);
     editingNodes = item
-      ? item.nodes.map((nodeItem) => ({ ...nodeItem }))
+      ? item.nodes.map((nodeItem) => ({
+        ...nodeItem,
+        reminderContent: getReminderContent(item, nodeItem)
+      }))
       : [node("custom-node-1", "", "2026-09-30", "2026-09-23", "pending", "")];
     renderNodeEditor();
     $("specialEditMask").classList.remove("hidden");
@@ -1109,11 +1196,16 @@
     const assistants = Array.from(
       $("specialAssistantOptions").querySelectorAll('input[type="checkbox"]:checked')
     ).map((input) => input.value);
+    const specialName = $("specialFormName").value.trim();
+    editingNodes = editingNodes.map((nodeItem) => ({
+      ...nodeItem,
+      reminderContent: nodeItem.reminderContent || buildReminderContent(specialName, nodeItem)
+    }));
     const formData = {
       year: Number($("specialFormYear").value),
       directionId: $("specialFormDirection").value,
       value: $("specialFormValue").value.trim(),
-      name: $("specialFormName").value.trim(),
+      name: specialName,
       content: $("specialFormContent").value.trim(),
       startDate,
       deadline,
@@ -1153,13 +1245,14 @@
     customSpecialCounter += 1;
     specials.unshift(newItem);
     activeYear = String(newItem.year);
+    listPage = 1;
     $("specialYearFilter").value = activeYear;
     closeEdit();
     renderCurrentPage();
     notify("专项已创建");
   }
 
-  function openProgress(itemId) {
+  function openProgress(itemId, nodeId) {
     if (!IS_LIST_PAGE) return;
     const item = getSpecial(itemId);
     if (!item) return;
@@ -1175,12 +1268,18 @@
       escapeHTML(nodeItem.name) + " · " + escapeHTML(getNodeMeta(nodeItem.status).label) +
       "</option>"
     )).join("");
-    const currentNode = getCurrentNode(item);
-    if (currentNode) $("specialProgressNode").value = currentNode.id;
+    const currentNode = item.nodes.find((nodeItem) => nodeItem.id === nodeId) || getCurrentNode(item);
+    if (currentNode) {
+      $("specialProgressNode").value = currentNode.id;
+      $("specialProgressNodeStatus").value =
+        currentNode.status === "completed" ? "completed" : "ongoing";
+    }
     $("specialProgressCurrent").value = "";
     $("specialProgressValue").value = item.progress;
     $("specialProgressNext").value = "";
     $("specialProgressAttachment").value = "";
+    $("specialProgressAttachmentName").textContent = "未选择文件";
+    $("specialUploadControl").classList.remove("has-file");
     $("specialProgressMask").classList.remove("hidden");
     $("specialProgressModal").classList.remove("hidden");
     updateOverlayState();
@@ -1205,9 +1304,10 @@
     if (!item) return;
     const progressValue = Number($("specialProgressValue").value);
     if (progressValue < item.progress) {
-      notify("本次填报进度不能低于已审批进度", "error");
+      notify("本次填报进度不能低于当前已记录进度", "error");
       return;
     }
+    const nodeStatus = $("specialProgressNodeStatus").value;
     const attachmentInput = $("specialProgressAttachment");
     const attachment = attachmentInput.files && attachmentInput.files[0]
       ? attachmentInput.files[0].name
@@ -1221,17 +1321,36 @@
       $("specialProgressNext").value.trim(),
       attachment,
       item.owner,
-      "2026-07-27 16:30",
-      "pending"
+      "2026-07-28 16:30",
+      nodeStatus
     ));
+    item.progress = progressValue;
+    const selectedNode = item.nodes.find((nodeItem) => nodeItem.id === $("specialProgressNode").value);
+    if (selectedNode) {
+      selectedNode.status = nodeStatus;
+      selectedNode.note = $("specialProgressCurrent").value.trim();
+      if (nodeStatus === "completed" && window.BusinessMessageCenter) {
+        window.BusinessMessageCenter.markNodeHandled(selectedNode.id);
+      }
+    }
+    if (progressValue >= 100) {
+      item.status = "completed";
+      item.progress = 100;
+      item.completionDate = CURRENT_DATE;
+      if (window.BusinessMessageCenter) {
+        item.nodes.forEach((nodeItem) => window.BusinessMessageCenter.markNodeHandled(nodeItem.id));
+      }
+    } else if (item.status === "not-started" && item.startDate <= CURRENT_DATE) {
+      item.status = "in-progress";
+    }
     customRecordCounter += 1;
     closeProgress();
     renderCurrentPage();
-    openDetail(item.id, "approvals");
-    notify("进度已提交，等待牵头人审批");
+    openDetail(item.id, "records");
+    notify("进度已保存");
   }
 
-  function openStatusRequest() {
+  function openStatusEditor() {
     if (!IS_LIST_PAGE) return;
     const item = getSpecial(activeSpecialId);
     if (!item) return;
@@ -1239,13 +1358,12 @@
     $("specialStatusTarget").innerHTML = options.map((status) => (
       '<option value="' + status + '">' + escapeHTML(getStatusMeta(status).label) + "</option>"
     )).join("");
-    $("specialStatusReason").value = "";
     $("specialStatusMask").classList.remove("hidden");
     $("specialStatusModal").classList.remove("hidden");
     updateOverlayState();
   }
 
-  function closeStatusRequest() {
+  function closeStatusEditor() {
     if (!IS_LIST_PAGE) return;
     $("specialStatusMask").classList.add("hidden");
     $("specialStatusModal").classList.add("hidden");
@@ -1256,60 +1374,22 @@
     event.preventDefault();
     const item = getSpecial(activeSpecialId);
     if (!item) return;
-    item.statusRequests.push({
-      id: "status-request-" + customRequestCounter,
-      target: $("specialStatusTarget").value,
-      reason: $("specialStatusReason").value.trim(),
-      applicant: item.owner,
-      submittedAt: "2026-07-27 16:35",
-      approval: "pending",
-      approver: "",
-      approvalAt: ""
-    });
-    customRequestCounter += 1;
-    closeStatusRequest();
-    renderCurrentPage();
-    openDetail(item.id, "approvals");
-    notify("状态调整申请已提交");
-  }
-
-  function handleApproval(action, kind, approvalId) {
-    const item = getSpecial(activeSpecialId);
-    if (!item) return;
-    const approved = action === "approve";
-    if (kind === "record") {
-      const progressRecord = item.records.find((recordItem) => recordItem.id === approvalId);
-      if (!progressRecord) return;
-      progressRecord.approval = approved ? "approved" : "rejected";
-      progressRecord.approver = item.leader;
-      progressRecord.approvalAt = "2026-07-27 17:05";
-      if (approved) {
-        item.progress = Math.max(item.progress, progressRecord.progress);
-        const nodeItem = item.nodes.find((candidate) => candidate.id === progressRecord.nodeId);
-        if (nodeItem) {
-          nodeItem.status = "completed";
-          nodeItem.note = progressRecord.current;
-        }
+    const targetStatus = $("specialStatusTarget").value;
+    item.status = targetStatus;
+    if (targetStatus === "completed") {
+      item.progress = 100;
+      item.completionDate = CURRENT_DATE;
+      if (window.BusinessMessageCenter) {
+        item.nodes.forEach((nodeItem) => window.BusinessMessageCenter.markNodeHandled(nodeItem.id));
       }
     } else {
-      const request = item.statusRequests.find((requestItem) => requestItem.id === approvalId);
-      if (!request) return;
-      request.approval = approved ? "approved" : "rejected";
-      request.approver = item.leader;
-      request.approvalAt = "2026-07-27 17:05";
-      if (approved) {
-        item.status = request.target;
-        if (request.target === "completed") {
-          item.progress = 100;
-          item.completionDate = CURRENT_DATE;
-        } else {
-          item.completionDate = "";
-        }
-      }
+      item.completionDate = "";
+      if (item.progress >= 100) item.progress = 99;
     }
+    closeStatusEditor();
     renderCurrentPage();
     renderDetailBody();
-    notify(approved ? "审批已通过" : "申请已退回");
+    notify("专项状态已调整");
   }
 
   function updateOverlayState() {
@@ -1328,6 +1408,11 @@
     renderResults();
   }
 
+  function resetPagination() {
+    listPage = 1;
+    resultPage = 1;
+  }
+
   function bindFilters() {
     const yearFilter = $("specialYearFilter");
     const directionFilter = $("specialDirectionFilter");
@@ -1337,18 +1422,22 @@
 
     yearFilter.addEventListener("change", (event) => {
       activeYear = event.target.value;
+      resetPagination();
       renderCurrentPage();
     });
     directionFilter.addEventListener("change", (event) => {
       activeDirection = event.target.value;
+      resetPagination();
       renderCurrentPage();
     });
     statusFilter.addEventListener("change", (event) => {
       activeStatus = event.target.value;
+      resetPagination();
       renderCurrentPage();
     });
     healthFilter.addEventListener("change", (event) => {
       activeHealth = event.target.value;
+      resetPagination();
       renderCurrentPage();
     });
   }
@@ -1362,16 +1451,19 @@
       }
       const progressButton = event.target.closest("[data-open-progress]");
       if (progressButton) {
-        openProgress(progressButton.dataset.openProgress);
+        openProgress(progressButton.dataset.openProgress, progressButton.dataset.progressNode);
         return;
       }
-      const approvalButton = event.target.closest("[data-approval-action]");
-      if (approvalButton) {
-        handleApproval(
-          approvalButton.dataset.approvalAction,
-          approvalButton.dataset.approvalKind,
-          approvalButton.dataset.approvalId
-        );
+      const pageButton = event.target.closest("[data-special-page-action]");
+      if (pageButton && !pageButton.disabled) {
+        const delta = pageButton.dataset.specialPageAction === "next" ? 1 : -1;
+        if (pageButton.dataset.specialPageType === "list") {
+          listPage += delta;
+          renderList();
+        } else {
+          resultPage += delta;
+          renderResults();
+        }
       }
     });
 
@@ -1396,7 +1488,14 @@
       openEdit("edit", itemId);
     });
     $("specialProgressButton").addEventListener("click", () => openProgress(activeSpecialId));
-    $("specialStatusRequestButton").addEventListener("click", openStatusRequest);
+    $("specialStatusButton").addEventListener("click", openStatusEditor);
+    $("specialWorkTabs").addEventListener("click", (event) => {
+      const button = event.target.closest("[data-work-state]");
+      if (!button) return;
+      activeWorkState = button.dataset.workState;
+      listPage = 1;
+      renderList();
+    });
 
     $("specialFormDirection").addEventListener("change", (event) => {
       const direction = getDirection(event.target.value);
@@ -1405,6 +1504,22 @@
     $("specialFormTargetType").addEventListener("change", (event) => {
       const units = { 次数: "场", 数量: "个", 百分比: "%", 节点: "个" };
       $("specialFormTargetUnit").value = units[event.target.value] || "";
+    });
+    $("specialProgressNode").addEventListener("change", (event) => {
+      const item = getSpecial(activeSpecialId);
+      const nodeItem = item
+        ? item.nodes.find((candidate) => candidate.id === event.target.value)
+        : null;
+      $("specialProgressNodeStatus").value =
+        nodeItem && nodeItem.status === "completed" ? "completed" : "ongoing";
+    });
+    $("specialProgressAttachmentTrigger").addEventListener("click", () => {
+      $("specialProgressAttachment").click();
+    });
+    $("specialProgressAttachment").addEventListener("change", (event) => {
+      const file = event.target.files && event.target.files[0];
+      $("specialProgressAttachmentName").textContent = file ? file.name : "未选择文件";
+      $("specialUploadControl").classList.toggle("has-file", Boolean(file));
     });
 
     $("specialAddNodeButton").addEventListener("click", () => {
@@ -1445,17 +1560,36 @@
       .forEach((element) => element.addEventListener("click", closeProgress));
     [$("specialStatusClose"), $("specialStatusMask"), ...document.querySelectorAll("[data-close-status]")]
       .filter(Boolean)
-      .forEach((element) => element.addEventListener("click", closeStatusRequest));
+      .forEach((element) => element.addEventListener("click", closeStatusEditor));
   }
 
   function bindEscape() {
     document.addEventListener("keydown", (event) => {
       if (event.key !== "Escape") return;
-      if (IS_LIST_PAGE && !$("specialStatusModal").classList.contains("hidden")) closeStatusRequest();
+      if (IS_LIST_PAGE && !$("specialStatusModal").classList.contains("hidden")) closeStatusEditor();
       else if (IS_LIST_PAGE && !$("specialProgressModal").classList.contains("hidden")) closeProgress();
       else if (IS_LIST_PAGE && !$("specialEditDrawer").classList.contains("hidden")) closeEdit();
       else if (!$("specialDetailDrawer").classList.contains("hidden")) closeDetail();
     });
+  }
+
+  function handleMessageDeepLink() {
+    if (!IS_LIST_PAGE) return;
+    const params = new URLSearchParams(window.location.search);
+    const specialId = params.get("special");
+    const nodeId = params.get("node");
+    const action = params.get("action");
+    if (!specialId || !getSpecial(specialId)) return;
+    if (action === "progress") {
+      openProgress(specialId, nodeId);
+    } else {
+      openDetail(specialId, "nodes", nodeId);
+    }
+    if (window.history && window.history.replaceState) {
+      try {
+        window.history.replaceState({}, document.title, window.location.href.split("?")[0]);
+      } catch (error) {}
+    }
   }
 
   function init() {
@@ -1467,7 +1601,13 @@
     bindListEvents();
     bindEscape();
     renderCurrentPage();
+    handleMessageDeepLink();
   }
+
+  window.SpecialManagement = {
+    openNode: (specialId, nodeId) => openDetail(specialId, "nodes", nodeId),
+    openProgress: (specialId, nodeId) => openProgress(specialId, nodeId)
+  };
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);

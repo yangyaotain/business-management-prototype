@@ -22,7 +22,7 @@
   border: 1px solid var(--line);
   border-radius: 10px;
   box-shadow: 0 5px 16px rgba(15, 42, 72, 0.05);
-  font-size: 11px;
+  font-size: var(--font-size-secondary);
   font-weight: 700;
 }
 
@@ -46,7 +46,7 @@
   background: #f8fafc;
   border: 1px solid transparent;
   border-radius: 9px;
-  font-size: 11px;
+  font-size: var(--font-size-secondary);
   font-weight: 700;
   transition:
     color 0.16s ease,
@@ -178,7 +178,7 @@
   margin-top: 5px;
   overflow: hidden;
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--font-size-secondary);
   line-height: 1.4;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -236,7 +236,7 @@
 
 .efficiency-metric-value span {
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--font-size-caption);
 }
 
 .efficiency-metric-change {
@@ -244,17 +244,25 @@
   align-items: center;
   gap: 4px;
   margin-top: 8px;
+  padding: 3px 7px;
   color: #14804a;
-  font-size: 11px;
+  background: var(--green-soft);
+  border: 1px solid #abefc6;
+  border-radius: 999px;
+  font-size: var(--font-size-secondary);
   font-weight: 700;
 }
 
-.efficiency-metric-change.bad {
+.efficiency-metric-change.down {
   color: #d92d20;
+  background: var(--red-soft);
+  border-color: #fecdca;
 }
 
 .efficiency-metric-change.neutral {
   color: var(--muted);
+  background: #f8fafc;
+  border-color: var(--line);
 }
 
 .efficiency-metric-change svg {
@@ -276,7 +284,7 @@
   padding-top: 10px;
   color: var(--muted);
   border-top: 1px dashed var(--border);
-  font-size: 10px;
+  font-size: var(--font-size-caption);
 }
 
 .efficiency-context-banner {
@@ -340,7 +348,7 @@
   display: block;
   margin-bottom: 5px;
   color: var(--primary);
-  font-size: 10px;
+  font-size: var(--font-size-secondary);
   font-weight: 800;
 }
 
@@ -353,7 +361,7 @@
 .efficiency-context-copy p {
   margin: 5px 0 0;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--font-size-secondary);
 }
 
 .efficiency-context-stats {
@@ -377,7 +385,7 @@
 
 .efficiency-context-stat span {
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--font-size-caption);
 }
 
 .efficiency-context-stat strong {
@@ -404,7 +412,7 @@
   color: var(--primary);
   background: var(--primary-soft);
   border-radius: 999px;
-  font-size: 10px;
+  font-size: var(--font-size-secondary);
   font-weight: 800;
 }
 
@@ -429,14 +437,14 @@
 .efficiency-table th {
   color: #667085;
   background: #f8fafc;
-  font-size: 10px;
+  font-size: var(--font-size-secondary);
   font-weight: 800;
   white-space: nowrap;
 }
 
 .efficiency-table td {
   color: #344054;
-  font-size: 11px;
+  font-size: var(--font-size-body);
 }
 
 .efficiency-table tbody tr:last-child td {
@@ -453,6 +461,43 @@
 
 .efficiency-table .numeric-cell {
   text-align: right;
+}
+
+.dashboard-organization-table.efficiency-table th.numeric-cell,
+.dashboard-organization-table.efficiency-table td.numeric-cell {
+  text-align: center;
+}
+
+.dashboard-organization-table.efficiency-table .efficiency-table-value {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.dashboard-organization-table.efficiency-table .efficiency-table-value span.up,
+.dashboard-organization-table.efficiency-table .efficiency-table-value span.down {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  border: 1px solid #abefc6;
+  border-radius: 999px;
+  background: var(--green-soft);
+  font-weight: 700;
+}
+
+.dashboard-organization-table.efficiency-table .efficiency-table-value span.up::before {
+  content: "↑";
+}
+
+.dashboard-organization-table.efficiency-table .efficiency-table-value span.down {
+  color: #d92d20;
+  background: var(--red-soft);
+  border-color: #fecdca;
+}
+
+.dashboard-organization-table.efficiency-table .efficiency-table-value span.down::before {
+  content: "↓";
 }
 
 .efficiency-table .people-cell {
@@ -473,10 +518,10 @@
 .efficiency-table-value span {
   margin-top: 3px;
   color: #14804a;
-  font-size: 9px;
+  font-size: var(--font-size-caption);
 }
 
-.efficiency-table-value span.bad {
+.efficiency-table-value span.down {
   color: #d92d20;
 }
 
@@ -553,13 +598,13 @@
 
 .efficiency-person-copy strong {
   color: #344054;
-  font-size: 11px;
+  font-size: var(--font-size-body);
 }
 
 .efficiency-person-copy span {
   margin-top: 3px;
   color: var(--muted);
-  font-size: 9px;
+  font-size: var(--font-size-caption);
 }
 
 .efficiency-person-name-button {
@@ -617,7 +662,7 @@
 
 .efficiency-chart-axis-label {
   fill: #98a2b3;
-  font-size: 9px;
+  font-size: var(--font-size-caption);
 }
 
 .efficiency-chart-area {
@@ -668,7 +713,7 @@
 
 .efficiency-trend-stat span {
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--font-size-caption);
 }
 
 .efficiency-trend-stat strong {
@@ -680,12 +725,12 @@
 .efficiency-trend-stat em {
   margin-top: 5px;
   color: #14804a;
-  font-size: 10px;
+  font-size: var(--font-size-caption);
   font-style: normal;
   font-weight: 800;
 }
 
-.efficiency-trend-stat em.bad {
+.efficiency-trend-stat em.down {
   color: #d92d20;
 }
 
@@ -703,7 +748,7 @@
   background: #f8fafc;
   border: 1px solid var(--line);
   border-radius: 11px;
-  font-size: 10px;
+  font-size: var(--font-size-secondary);
   line-height: 1.65;
 }
 

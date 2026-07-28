@@ -1,4 +1,5 @@
 (function setupPerformanceDashboard() {
+  const PAGE_SIZE = 6;
   const ICONS = {
     department:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V7l8-4 8 4v14M8 10h2M14 10h2M8 14h2M14 14h2M10 21v-3h4v3"/></svg>',
@@ -23,10 +24,50 @@
   };
 
   const GROUPS = [
-    { id: "group-1", name: "第一业务组", leader: "赵倩" },
-    { id: "group-2", name: "第二业务组", leader: "张明" },
-    { id: "group-3", name: "非电力业务组", leader: "孙岚" },
-    { id: "group-4", name: "造价业务组", leader: "王军" }
+    {
+      id: "group-1",
+      name: "第一业务组",
+      leader: "赵倩",
+      members: [
+        member("member-1-1", "赵倩", "业务组长"),
+        member("member-1-2", "林晓", "高级项目经理"),
+        member("member-1-3", "陈浩", "项目经理"),
+        member("member-1-4", "刘璇", "项目经理")
+      ]
+    },
+    {
+      id: "group-2",
+      name: "第二业务组",
+      leader: "张明",
+      members: [
+        member("member-2-1", "李文", "项目经理"),
+        member("member-2-2", "张明", "业务组长"),
+        member("member-2-3", "周启航", "高级项目经理"),
+        member("member-2-4", "许妍", "项目经理")
+      ]
+    },
+    {
+      id: "group-3",
+      name: "非电力业务组",
+      leader: "孙岚",
+      members: [
+        member("member-3-1", "孙岚", "业务组长"),
+        member("member-3-2", "杨帆", "高级项目经理"),
+        member("member-3-3", "宋妍", "项目经理"),
+        member("member-3-4", "何睿", "项目经理")
+      ]
+    },
+    {
+      id: "group-4",
+      name: "造价业务组",
+      leader: "王军",
+      members: [
+        member("member-4-1", "王军", "业务组长"),
+        member("member-4-2", "罗欣", "高级造价经理"),
+        member("member-4-3", "高杰", "造价项目经理"),
+        member("member-4-4", "唐悦", "造价项目经理")
+      ]
+    }
   ];
 
   const ROLE_VIEWS = [
@@ -52,9 +93,10 @@
       label: "组员",
       userName: "李文",
       avatar: "李",
-      defaultLevel: "group",
+      defaultLevel: "person",
       groupId: "group-2",
-      canConfigure: false
+      memberId: "member-2-1",
+      canConfigure: true
     }
   ];
 
@@ -226,10 +268,12 @@
     performance("g4-training", "group", "group-4", "trainingContribution", 10, 9, 12),
     performance("g4-case", "group", "group-4", "caseContribution", 8, 8, 10)
   ];
+  appendPersonPerformanceItems();
 
   let activeRoleId = "departmentHead";
   let activeLevel = "department";
   let activeGroupId = "group-2";
+  let activeMemberId = null;
   let activePeriodType = "月度";
   const selectedPeriods = {
     月度: "2026-07",
@@ -237,6 +281,7 @@
   };
   let activeCategory = "all";
   let activeStatus = "all";
+  let currentPage = 1;
   let activeDetailId = null;
   let editingItemId = null;
   let customItemCounter = 1;
@@ -247,8 +292,66 @@
     return { id, name, category, cycle, unit, direction, definition, sampleActual };
   }
 
-  function performance(id, scope, groupId, metricId, actual, target, challenge) {
-    return { id, scope, groupId, metricId, actual, target, challenge };
+  function member(id, name, position) {
+    return { id, name, position };
+  }
+
+  function performance(id, scope, groupId, metricId, actual, target, challenge, memberId, targetSource) {
+    return {
+      id,
+      scope,
+      groupId,
+      memberId: memberId || null,
+      metricId,
+      actual,
+      target,
+      challenge,
+      targetSource: targetSource || null
+    };
+  }
+
+  function appendPersonPerformanceItems() {
+    performanceItems
+      .filter((item) => item.scope === "group")
+      .slice()
+      .forEach(syncPersonItemsForGroupMetric);
+  }
+
+  function syncPersonItemsForGroupMetric(groupItem) {
+    const group = getGroup(groupItem.groupId);
+    if (!group) return;
+    const groupIndex = GROUPS.findIndex((item) => item.id === group.id);
+    const metricItem = METRIC_LIBRARY.find((candidate) => candidate.id === groupItem.metricId);
+    const shareFactor = metricItem && ["次", "个"].includes(metricItem.unit)
+      ? 1 / group.members.length
+      : 1;
+    group.members.forEach((person, memberIndex) => {
+      const personItem = performanceItems.find((item) => (
+        item.scope === "person" &&
+        item.groupId === group.id &&
+        item.memberId === person.id &&
+        item.metricId === groupItem.metricId
+      ));
+      if (personItem) {
+        if (personItem.targetSource !== "personal") {
+          personItem.target = groupItem.target * shareFactor;
+          personItem.challenge = groupItem.challenge * shareFactor;
+        }
+        return;
+      }
+      const actualFactor = 0.9 + (((groupIndex * group.members.length) + memberIndex) % 5) * 0.05;
+      performanceItems.push(performance(
+        "person-" + person.id + "-" + groupItem.metricId,
+        "person",
+        group.id,
+        groupItem.metricId,
+        groupItem.actual * shareFactor * actualFactor,
+        groupItem.target * shareFactor,
+        groupItem.challenge * shareFactor,
+        person.id,
+        "group"
+      ));
+    });
   }
 
   function escapeHTML(value) {
@@ -270,6 +373,15 @@
 
   function getGroup(groupId) {
     return GROUPS.find((item) => item.id === groupId) || null;
+  }
+
+  function getMember(groupId, memberId) {
+    const group = getGroup(groupId);
+    return group ? group.members.find((item) => item.id === memberId) || null : null;
+  }
+
+  function getActiveMember() {
+    return getMember(activeGroupId, activeMemberId);
   }
 
   function getItem(itemId) {
@@ -409,6 +521,10 @@
   function getScopeLabel(item) {
     if (item.scope === "department") return "代理业务部";
     const group = getGroup(item.groupId);
+    if (item.scope === "person") {
+      const person = getMember(item.groupId, item.memberId);
+      return person ? person.name : "个人";
+    }
     return group ? group.name : "业务组";
   }
 
@@ -420,7 +536,11 @@
     const scoped = performanceItems.filter((item) => (
       activeLevel === "department"
         ? item.scope === "department"
-        : item.scope === "group" && item.groupId === activeGroupId
+        : activeLevel === "group"
+          ? item.scope === "group" && item.groupId === activeGroupId
+          : item.scope === "person" &&
+            item.groupId === activeGroupId &&
+            item.memberId === activeMemberId
     ));
     if (activeCategory === "all") return scoped;
     return scoped.filter((item) => getMetric(item.metricId).category === activeCategory);
@@ -430,6 +550,18 @@
     const items = getContextItems();
     if (activeStatus === "all") return items;
     return items.filter((item) => getState(item) === activeStatus);
+  }
+
+  function canOpenGroup(groupId) {
+    if (activeRoleId === "departmentHead") return true;
+    return activeRoleId === "groupLeader" && getActiveRole().groupId === groupId;
+  }
+
+  function canOpenMember(groupId, memberId) {
+    if (activeRoleId === "departmentHead") return true;
+    if (activeRoleId === "groupLeader") return getActiveRole().groupId === groupId;
+    const role = getActiveRole();
+    return role.groupId === groupId && role.memberId === memberId;
   }
 
   function notify(message, tone) {
@@ -499,40 +631,89 @@
   function renderHeader() {
     const role = getActiveRole();
     const group = getGroup(activeGroupId);
+    const person = getActiveMember();
     const groupName = group ? group.name : "业务组";
     const isDepartment = activeLevel === "department";
+    const isPerson = activeLevel === "person" && Boolean(person);
+    const scopeLabel = isDepartment ? "部门" : isPerson ? "个人" : "业务组";
+    let title = "代理业务部绩效看板";
+    let description = "汇总部门及各业务组的实际完成值、目标值与挑战值，及时识别未达目标指标。";
+    let tableTitle = "部门绩效指标";
+    let exceptionDescription = "展示部门当前未达到目标值的指标。";
+    let tableDescription = "实际值与目标值、挑战值统一对比，点击指标名称查看周期趋势与业务组明细。";
+
+    if (activeLevel === "group" && group) {
+      title = groupName + "绩效看板";
+      description = "查看" + groupName + "指标结果和组员绩效达成情况，可逐级进入个人视图。";
+      tableTitle = groupName + "绩效指标";
+      exceptionDescription = "展示" + groupName + "当前未达到目标值的指标。";
+      tableDescription = "实际值与目标值、挑战值统一对比，点击指标名称查看周期趋势与组员明细。";
+    } else if (isPerson) {
+      title = person.name + "个人绩效看板";
+      description = "查看" + person.name + "在" + groupName + "的个人指标结果、目标差距和周期趋势。";
+      tableTitle = person.name + "个人绩效指标";
+      exceptionDescription = "展示" + person.name + "当前未达到目标值的指标。";
+      tableDescription = "仅展示当前人员的实际值、目标值、挑战值、达成率和目标差距。";
+    }
+
     $("performanceUserAvatar").textContent = role.avatar;
     $("performanceUserName").textContent = role.userName;
     $("performanceUserRole").textContent = role.label;
-    $("performanceTopbarSubtitle").textContent = isDepartment
-      ? role.label + " · 部门绩效视图"
-      : role.label + " · " + groupName + "绩效视图";
-    $("performancePageTitle").textContent = isDepartment
-      ? "代理业务部绩效看板"
-      : groupName + "绩效看板";
-    $("performancePageDescription").textContent = isDepartment
-      ? "汇总部门及各业务组的实际完成值、目标值与挑战值，及时识别未达目标指标。"
-      : "查看" + groupName + "各项指标的实际完成值、目标值、挑战值和目标差距。";
+    $("performanceTopbarSubtitle").textContent = role.label + " · " + scopeLabel + "绩效视图";
+    $("performancePageTitle").textContent = title;
+    $("performancePageDescription").textContent = description;
+    $("performanceRoleHint").textContent = role.id === "departmentHead"
+      ? "部门负责人查看部门和各业务组绩效，可逐级下钻并配置各层级指标。"
+      : role.id === "groupLeader"
+        ? "业务组长查看所属" + groupName + "及组员绩效，可配置本组和个人指标。"
+        : "组员仅查看本人绩效指标结果，可设置本人指标与目标。";
 
     $("openPerformanceConfig").classList.toggle("hidden", !role.canConfigure);
+    $("performanceTableTitle").textContent = tableTitle;
+    $("performanceExceptionDescription").textContent = exceptionDescription;
+    $("performanceTableDescription").textContent = tableDescription;
+    renderBreadcrumb();
+    renderPageActions();
+    document.title = title + " - 业务管理系统";
+  }
 
-    $("performanceTableTitle").textContent = isDepartment
-      ? "部门绩效指标"
-      : groupName + "绩效指标";
-    $("performanceExceptionDescription").textContent = isDepartment
-      ? "展示部门当前未达到目标值的指标。"
-      : "展示" + groupName + "当前未达到目标值的指标。";
-    $("performanceGroupTitle").textContent = role.id === "departmentHead"
-      ? "各业务组绩效达成情况"
-      : groupName + "绩效达成情况";
-    $("performanceGroupDescription").textContent = role.id === "departmentHead"
-      ? "按指标达标率比较各业务组，不混合不同单位的实际值。"
-      : "展示所属业务组的指标达标、挑战和异常情况。";
+  function renderBreadcrumb() {
+    const role = getActiveRole();
+    const group = getGroup(activeGroupId);
+    const person = getActiveMember();
+    const parts = ['<span>首页</span><span>/</span>'];
+
+    if (activeLevel === "department") {
+      parts.push('<span class="current">绩效看板</span>');
+    } else {
+      parts.push(role.id === "departmentHead"
+        ? '<button type="button" class="performance-breadcrumb-button" data-performance-nav="department">绩效看板</button>'
+        : "<span>绩效看板</span>");
+      if (group) {
+        parts.push("<span>/</span>");
+        parts.push(activeLevel === "person" && role.id !== "member"
+          ? '<button type="button" class="performance-breadcrumb-button" data-performance-nav="group">' +
+            escapeHTML(group.name) + "</button>"
+          : '<span class="' + (activeLevel === "group" ? "current" : "") + '">' +
+            escapeHTML(group.name) + "</span>");
+      }
+      if (activeLevel === "person" && person) {
+        parts.push('<span>/</span><span class="current">' + escapeHTML(person.name) + "</span>");
+      }
+    }
+    $("performanceBreadcrumb").innerHTML = parts.join("");
+  }
+
+  function renderPageActions() {
+    const canBack =
+      (activeLevel === "group" && activeRoleId === "departmentHead") ||
+      (activeLevel === "person" && activeRoleId !== "member");
+    $("performanceBackButton").classList.toggle("hidden", !canBack);
   }
 
   function summaryCard(label, value, unit, foot, tone, icon) {
     return [
-      '<article class="performance-summary-card ',
+      '<article class="card performance-summary-card ',
       tone || "",
       '">',
       '<div class="performance-summary-top">',
@@ -574,11 +755,18 @@
   }
 
   function renderGroupComparison() {
-    const role = getActiveRole();
-    const visibleGroups = role.id === "departmentHead"
-      ? GROUPS
-      : GROUPS.filter((group) => group.id === role.groupId);
-    const rows = visibleGroups.map((group) => {
+    $("performanceScopePanel").classList.toggle("is-person", activeLevel === "person");
+    if (activeLevel === "department") {
+      renderDepartmentGroups();
+    } else if (activeLevel === "group") {
+      renderGroupMembers();
+    } else {
+      renderPersonContext();
+    }
+  }
+
+  function renderDepartmentGroups() {
+    const rows = GROUPS.map((group) => {
       let items = performanceItems.filter((item) => item.scope === "group" && item.groupId === group.id);
       if (activeCategory !== "all") {
         items = items.filter((item) => getMetric(item.metricId).category === activeCategory);
@@ -588,20 +776,19 @@
       const abnormalCount = states.filter((state) => state === "abnormal").length;
       const achievedCount = states.length - abnormalCount;
       const rate = items.length ? Math.round((achievedCount / items.length) * 100) : 0;
-      const active = activeLevel === "group" && activeGroupId === group.id;
       return [
         '<div class="performance-group-row',
         abnormalCount ? " has-risk" : "",
-        active ? " active" : "",
         '">',
         '<button type="button" class="performance-group-entry" data-group-entry="',
         escapeAttr(group.id),
-        '"',
-        role.id === "departmentHead" ? "" : " disabled",
-        ">",
+        '">',
         escapeHTML(group.name),
         "<span>组长：",
         escapeHTML(group.leader),
+        " · ",
+        group.members.length,
+        "名组员",
         "</span></button>",
         '<div class="performance-group-progress">',
         '<div class="performance-group-progress-head"><span>指标达标率</span><strong>',
@@ -627,7 +814,110 @@
     }).join("");
 
     $("performanceGroupComparison").innerHTML = rows;
-    $("performanceGroupMeta").textContent = visibleGroups.length + "个业务组";
+    $("performanceGroupTitle").textContent = "各业务组绩效达成情况";
+    $("performanceGroupDescription").textContent = "按指标达标率比较各业务组，点击业务组名称进入组员绩效视图。";
+    $("performanceGroupMeta").textContent = GROUPS.length + "个业务组";
+  }
+
+  function renderGroupMembers() {
+    const group = getGroup(activeGroupId);
+    if (!group) return;
+    const rows = group.members.map((person) => {
+      let items = performanceItems.filter((item) => (
+        item.scope === "person" &&
+        item.groupId === group.id &&
+        item.memberId === person.id
+      ));
+      if (activeCategory !== "all") {
+        items = items.filter((item) => getMetric(item.metricId).category === activeCategory);
+      }
+      const states = items.map((item) => getState(item));
+      const challengeCount = states.filter((state) => state === "challenge").length;
+      const abnormalCount = states.filter((state) => state === "abnormal").length;
+      const achievedCount = states.length - abnormalCount;
+      const rate = items.length ? Math.round((achievedCount / items.length) * 100) : 0;
+      const canOpen = canOpenMember(group.id, person.id);
+      return [
+        '<div class="performance-group-row performance-member-row',
+        abnormalCount ? " has-risk" : "",
+        '">',
+        '<button type="button" class="performance-member-entry" data-member-entry="',
+        escapeAttr(person.id),
+        '"',
+        canOpen ? "" : " disabled",
+        '><span class="performance-member-avatar">',
+        escapeHTML(person.name.slice(0, 1)),
+        '</span><span class="performance-member-copy"><strong>',
+        escapeHTML(person.name),
+        "</strong><small>",
+        escapeHTML(person.position),
+        "</small></span></button>",
+        '<div class="performance-group-progress">',
+        '<div class="performance-group-progress-head"><span>指标达标率</span><strong>',
+        rate,
+        "%</strong></div>",
+        '<div class="performance-group-track"><span style="width:',
+        Math.min(rate, 100),
+        '%"></span></div>',
+        "</div>",
+        '<div class="performance-group-stats">',
+        '<div class="performance-group-stat"><strong>',
+        achievedCount,
+        "</strong><span>达标</span></div>",
+        '<div class="performance-group-stat challenge"><strong>',
+        challengeCount,
+        "</strong><span>挑战</span></div>",
+        '<div class="performance-group-stat risk"><strong>',
+        abnormalCount,
+        "</strong><span>异常</span></div>",
+        "</div></div>"
+      ].join("");
+    }).join("");
+
+    $("performanceGroupComparison").innerHTML = rows;
+    $("performanceGroupTitle").textContent = group.name + "组员绩效达成情况";
+    $("performanceGroupDescription").textContent = "点击组员进入个人绩效视图，查看指标结果、目标差距和周期趋势。";
+    $("performanceGroupMeta").textContent = group.members.length + "名组员";
+  }
+
+  function renderPersonContext() {
+    const group = getGroup(activeGroupId);
+    const person = getActiveMember();
+    if (!group || !person) return;
+    const items = getContextItems();
+    const states = items.map((item) => getState(item));
+    const challengeCount = states.filter((state) => state === "challenge").length;
+    const abnormalCount = states.filter((state) => state === "abnormal").length;
+    const rate = items.length ? Math.round(((states.length - abnormalCount) / items.length) * 100) : 0;
+    $("performanceGroupComparison").innerHTML = [
+      '<div class="performance-person-context">',
+      '<div class="performance-person-main"><span class="performance-person-avatar">',
+      escapeHTML(person.name.slice(0, 1)),
+      '</span><div><strong>',
+      escapeHTML(person.name),
+      "</strong><span>",
+      escapeHTML(person.position),
+      " · ",
+      escapeHTML(group.name),
+      "</span></div></div>",
+      '<div class="performance-person-stats">',
+      '<div><span>指标总数</span><strong>',
+      items.length,
+      "项</strong></div>",
+      '<div><span>指标达标率</span><strong>',
+      rate,
+      "%</strong></div>",
+      '<div><span>达成挑战</span><strong>',
+      challengeCount,
+      "项</strong></div>",
+      '<div class="risk"><span>异常指标</span><strong>',
+      abnormalCount,
+      "项</strong></div>",
+      "</div></div>"
+    ].join("");
+    $("performanceGroupTitle").textContent = "个人绩效范围";
+    $("performanceGroupDescription").textContent = "当前仅展示本人指标结果，不包含其他组员数据。";
+    $("performanceGroupMeta").textContent = "个人视图";
   }
 
   function renderExceptions() {
@@ -674,9 +964,33 @@
     }).join("");
   }
 
+  function renderPagination(total, pageCount) {
+    $("performancePagination").innerHTML = [
+      '<span class="performance-page-total">共 ',
+      total,
+      " 项</span>",
+      '<button type="button" class="performance-page-button" data-page-action="prev"',
+      currentPage <= 1 ? " disabled" : "",
+      '><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>上一页</button>',
+      '<span class="performance-page-info">第 ',
+      currentPage,
+      " / ",
+      pageCount,
+      " 页</span>",
+      '<button type="button" class="performance-page-button" data-page-action="next"',
+      currentPage >= pageCount ? " disabled" : "",
+      '>下一页<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>'
+    ].join("");
+  }
+
   function renderTable() {
     const items = getFilteredItems();
+    const pageCount = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
+    currentPage = Math.min(Math.max(currentPage, 1), pageCount);
+    const start = (currentPage - 1) * PAGE_SIZE;
+    const pageItems = items.slice(start, start + PAGE_SIZE);
     $("performanceResultCount").textContent = items.length + "项指标";
+    renderPagination(items.length, pageCount);
 
     if (!items.length) {
       $("performanceTableBody").innerHTML = [
@@ -690,7 +1004,7 @@
       return;
     }
 
-    $("performanceTableBody").innerHTML = items.map((item) => {
+    $("performanceTableBody").innerHTML = pageItems.map((item) => {
       const metricItem = getMetric(item.metricId);
       const actual = getActual(item);
       const state = getState(item, actual);
@@ -773,9 +1087,6 @@
     const metricItem = getMetric(item.metricId);
     const isMonthly = activePeriodType === "月度";
     const count = isMonthly ? 6 : 4;
-    const factors = metricItem.direction === "low"
-      ? (isMonthly ? [1.28, 1.2, 1.14, 1.09, 1.04, 1] : [1.22, 1.13, 1.06, 1])
-      : (isMonthly ? [0.82, 0.86, 0.9, 0.94, 0.97, 1] : [0.87, 0.92, 0.96, 1]);
     const periodValue = selectedPeriods[activePeriodType];
     const labels = Array.from({ length: count }, (_, index) => {
       const offset = index - (count - 1);
@@ -794,22 +1105,62 @@
       return year + " Q" + quarter;
     });
     const currentActual = getActual(item);
+    const target = getTarget(item);
+    const challenge = getChallenge(item);
+    const currentIsAbnormal = getState(item, currentActual) === "abnormal";
+    const earlyAbnormalCount = currentIsAbnormal ? 1 : isMonthly ? 2 : 1;
+    const values = [];
+    for (let index = 0; index < earlyAbnormalCount; index += 1) {
+      values.push(getTrendAbnormalValue(metricItem, target, earlyAbnormalCount - index));
+    }
+    const achievedPointCount = count - earlyAbnormalCount - 1;
+    for (let index = 0; index < achievedPointCount; index += 1) {
+      const progress = achievedPointCount <= 1 ? 0 : index / (achievedPointCount - 1);
+      const value = metricItem.direction === "low"
+        ? target - ((target - challenge) * progress)
+        : target + ((challenge - target) * progress);
+      values.push(roundValue(value, metricItem.unit));
+    }
+    values.push(currentActual);
     return labels.map((label, index) => ({
       label,
-      value: roundValue(currentActual * factors[index], metricItem.unit)
+      value: values[index]
     }));
+  }
+
+  function getTrendAbnormalValue(metricItem, target, severity) {
+    const step = ["次", "个"].includes(metricItem.unit)
+      ? severity
+      : Math.max(metricItem.unit === "万元" ? 0.8 : 0.5, Math.abs(target) * 0.035 * severity);
+    const value = metricItem.direction === "low" ? target + step : Math.max(0, target - step);
+    return roundValue(value, metricItem.unit);
   }
 
   function renderTrendChart(item) {
     const metricItem = getMetric(item.metricId);
     const trend = getTrend(item);
+    const target = getTarget(item);
+    const challenge = getChallenge(item);
     const maximum = Math.max(
-      getTarget(item),
-      getChallenge(item),
+      target,
+      challenge,
       ...trend.map((point) => point.value)
     ) || 1;
     return [
-      '<div class="performance-trend-chart">',
+      '<div class="performance-trend-explanation">',
+      '<div class="performance-trend-legend"><span><i class="abnormal"></i>未达目标</span>',
+      '<span><i class="achieved"></i>已达目标（含达成挑战）</span></div>',
+      '<div class="performance-trend-threshold"><span>目标值 ',
+      escapeHTML(formatValue(target, metricItem.unit)),
+      "</span><span>挑战值 ",
+      escapeHTML(formatValue(challenge, metricItem.unit)),
+      "</span></div></div>",
+      '<p class="performance-trend-note">红色表示该周期未达到目标值，绿色表示已达到目标值；本指标按“',
+      metricItem.direction === "low" ? "越低越好" : "越高越好",
+      '”判定。</p>',
+      '<div class="performance-trend-chart" style="--trend-columns:',
+      trend.length,
+      '">',
       trend.map((point) => {
         const state = getState(item, point.value);
         const height = Math.max(8, Math.round((point.value / maximum) * 118));
@@ -834,29 +1185,35 @@
   }
 
   function renderGroupDetailTable(item) {
-    const rows = GROUPS.map((group) => {
-      const groupItem = performanceItems.find((candidate) => (
-        candidate.scope === "group" &&
-        candidate.groupId === group.id &&
+    const isDepartment = item.scope === "department";
+    const group = getGroup(item.groupId);
+    const entities = isDepartment
+      ? GROUPS.map((groupItem) => ({ id: groupItem.id, label: groupItem.name }))
+      : (group ? group.members.map((person) => ({ id: person.id, label: person.name })) : []);
+    const rows = entities.map((entity) => {
+      const comparisonItem = performanceItems.find((candidate) => (
+        candidate.scope === (isDepartment ? "group" : "person") &&
+        candidate.groupId === (isDepartment ? entity.id : item.groupId) &&
+        (isDepartment || candidate.memberId === entity.id) &&
         candidate.metricId === item.metricId
       ));
-      if (!groupItem) {
+      if (!comparisonItem) {
         return [
           "<tr><td>",
-          escapeHTML(group.name),
+          escapeHTML(entity.label),
           "</td><td>-</td><td>-</td><td><span class=\"performance-status abnormal\">未配置</span></td></tr>"
         ].join("");
       }
-      const metricItem = getMetric(groupItem.metricId);
-      const actual = getActual(groupItem);
-      const state = getState(groupItem, actual);
+      const metricItem = getMetric(comparisonItem.metricId);
+      const actual = getActual(comparisonItem);
+      const state = getState(comparisonItem, actual);
       return [
         "<tr><td>",
-        escapeHTML(group.name),
+        escapeHTML(entity.label),
         "</td><td>",
         escapeHTML(formatValue(actual, metricItem.unit)),
         "</td><td>",
-        getAchievement(groupItem, actual),
+        getAchievement(comparisonItem, actual),
         '%</td><td><span class="performance-status ',
         state,
         '">',
@@ -867,11 +1224,38 @@
 
     return [
       '<table class="performance-detail-table">',
-      "<thead><tr><th>业务组</th><th>实际完成值</th><th>达成率</th><th>达成状态</th></tr></thead>",
+      "<thead><tr><th>",
+      isDepartment ? "业务组" : "组员",
+      "</th><th>实际完成值</th><th>达成率</th><th>达成状态</th></tr></thead>",
       "<tbody>",
       rows,
       "</tbody></table>"
     ].join("");
+  }
+
+  function renderDetailComparison(item) {
+    if (item.scope === "person") return "";
+    return [
+      '<section class="performance-detail-section"><h3>',
+      item.scope === "department" ? "各业务组同指标对比" : "组员同指标对比",
+      "</h3>",
+      renderGroupDetailTable(item),
+      "</section>"
+    ].join("");
+  }
+
+  function canConfigureScope(scope, groupId, memberId) {
+    const role = getActiveRole();
+    if (!role.canConfigure) return false;
+    if (role.id === "departmentHead") return true;
+    if (role.id === "groupLeader") {
+      return (scope === "group" || scope === "person") && groupId === role.groupId;
+    }
+    return scope === "person" && groupId === role.groupId && memberId === role.memberId;
+  }
+
+  function canConfigureItem(item) {
+    return Boolean(item) && canConfigureScope(item.scope, item.groupId, item.memberId);
   }
 
   function openDetail(itemId) {
@@ -916,12 +1300,10 @@
       "</h3>",
       renderTrendChart(item),
       "</section>",
-      '<section class="performance-detail-section"><h3>各业务组同指标对比</h3>',
-      renderGroupDetailTable(item),
-      "</section>"
+      renderDetailComparison(item)
     ].join("");
 
-    $("editPerformanceTarget").classList.toggle("hidden", !getActiveRole().canConfigure);
+    $("editPerformanceTarget").classList.toggle("hidden", !canConfigureItem(item));
     $("performanceDetailMask").classList.remove("hidden");
     $("performanceDetailDrawer").classList.remove("hidden");
     document.body.classList.add("has-performance-overlay");
@@ -953,18 +1335,68 @@
     )).join("");
   }
 
-  function findUnconfiguredMetric(scope, groupId) {
+  function getAllowedConfigScopes(role) {
+    if (role.id === "departmentHead") return ["department", "group", "person"];
+    if (role.id === "groupLeader") return ["group", "person"];
+    return ["person"];
+  }
+
+  function renderConfigScopeOptions(preferredScope) {
+    const role = getActiveRole();
+    const scopeMeta = {
+      department: "部门",
+      group: "业务组",
+      person: "个人"
+    };
+    const allowedScopes = getAllowedConfigScopes(role);
+    $("configScope").innerHTML = allowedScopes.map((scope) => (
+      '<option value="' + scope + '">' + scopeMeta[scope] + "</option>"
+    )).join("");
+    $("configScope").value = allowedScopes.includes(preferredScope) ? preferredScope : allowedScopes[0];
+    $("configScope").disabled = Boolean(editingItemId) || allowedScopes.length === 1;
+  }
+
+  function renderConfigMemberOptions(groupId, preferredMemberId) {
+    const group = getGroup(groupId);
+    const members = group ? group.members : [];
+    $("configMember").innerHTML = members.map((person) => (
+      '<option value="' + escapeAttr(person.id) + '">' +
+      escapeHTML(person.name) + " · " + escapeHTML(person.position) +
+      "</option>"
+    )).join("");
+    const role = getActiveRole();
+    const lockedMemberId = role.id === "member" ? role.memberId : preferredMemberId;
+    if (members.some((person) => person.id === lockedMemberId)) {
+      $("configMember").value = lockedMemberId;
+    }
+  }
+
+  function findUnconfiguredMetric(scope, groupId, memberId) {
     const existing = performanceItems
-      .filter((item) => item.scope === scope && (scope === "department" || item.groupId === groupId))
+      .filter((item) => (
+        item.scope === scope &&
+        (scope === "department" || item.groupId === groupId) &&
+        (scope !== "person" || item.memberId === memberId)
+      ))
       .map((item) => item.metricId);
     return METRIC_LIBRARY.find((metricItem) => existing.indexOf(metricItem.id) < 0) || METRIC_LIBRARY[0];
   }
 
-  function syncConfigGroupState() {
-    const isGroup = $("configScope").value === "group";
+  function syncConfigScopeState() {
+    const scope = $("configScope").value;
+    const needsGroup = scope === "group" || scope === "person";
+    const isPerson = scope === "person";
     const role = getActiveRole();
-    $("configGroup").disabled = !isGroup || Boolean(editingItemId) || role.id !== "departmentHead";
-    $("configGroupField").classList.toggle("is-disabled", !isGroup);
+    $("configGroup").disabled = !needsGroup || Boolean(editingItemId) || role.id !== "departmentHead";
+    $("configMember").disabled = !isPerson || Boolean(editingItemId) || role.id === "member";
+    $("configGroupField").classList.toggle("is-disabled", !needsGroup);
+    $("configMemberField").classList.toggle("is-disabled", !isPerson);
+    if (isPerson) {
+      renderConfigMemberOptions(
+        $("configGroup").value,
+        $("configMember").value || activeMemberId || role.memberId
+      );
+    }
   }
 
   function syncMetricFields() {
@@ -981,32 +1413,41 @@
 
   function openConfig(mode, itemId) {
     const role = getActiveRole();
-    if (!role.canConfigure) return;
     const item = mode === "edit" ? getItem(itemId) : null;
+    if (!role.canConfigure) return;
+    if (item && !canConfigureItem(item)) return;
     editingItemId = item ? item.id : null;
     $("performanceConfigTitle").textContent = item ? "调整绩效目标" : "设置绩效指标";
     $("configYear").disabled = true;
-    $("configScope").disabled = Boolean(item) || role.id !== "departmentHead";
     $("configMetric").disabled = Boolean(item);
+    renderConfigScopeOptions(item ? item.scope : activeLevel);
 
     if (item) {
       $("configYear").value = getActiveYear();
       $("configScope").value = item.scope;
       $("configGroup").value = item.groupId || activeGroupId;
+      renderConfigMemberOptions(item.groupId || activeGroupId, item.memberId);
       $("configMetric").value = item.metricId;
       $("configTarget").value = getTarget(item);
       $("configChallenge").value = getChallenge(item);
     } else {
       $("configYear").value = getActiveYear();
-      $("configScope").value = role.id === "departmentHead" ? activeLevel : "group";
-      $("configGroup").value = activeGroupId;
-      const availableMetric = findUnconfiguredMetric($("configScope").value, activeGroupId);
+      $("configGroup").value = role.groupId || activeGroupId;
+      renderConfigMemberOptions(
+        $("configGroup").value,
+        role.memberId || activeMemberId
+      );
+      const availableMetric = findUnconfiguredMetric(
+        $("configScope").value,
+        $("configGroup").value,
+        $("configMember").value
+      );
       $("configMetric").value = availableMetric.id;
       $("configTarget").value = "";
       $("configChallenge").value = "";
     }
 
-    syncConfigGroupState();
+    syncConfigScopeState();
     syncMetricFields();
     $("performanceConfigMask").classList.remove("hidden");
     $("performanceConfigDrawer").classList.remove("hidden");
@@ -1028,7 +1469,8 @@
   function handleConfigSubmit(event) {
     event.preventDefault();
     const scope = $("configScope").value;
-    const groupId = scope === "group" ? $("configGroup").value : null;
+    const groupId = scope === "group" || scope === "person" ? $("configGroup").value : null;
+    const memberId = scope === "person" ? $("configMember").value : null;
     const metricId = $("configMetric").value;
     const target = Number($("configTarget").value);
     const challenge = Number($("configChallenge").value);
@@ -1037,6 +1479,10 @@
     const storedTarget = target / valueScale;
     const storedChallenge = challenge / valueScale;
 
+    if (!canConfigureScope(scope, groupId, memberId)) {
+      notify("当前角色无权配置所选绩效范围", "error");
+      return;
+    }
     if (!Number.isFinite(target) || !Number.isFinite(challenge)) {
       notify("请输入有效的目标值和挑战值", "error");
       return;
@@ -1059,6 +1505,9 @@
       if (!current) return;
       current.target = storedTarget;
       current.challenge = storedChallenge;
+      if (current.scope === "person") current.targetSource = "personal";
+      if (current.scope === "group") syncPersonItemsForGroupMetric(current);
+      currentPage = 1;
       closeConfig();
       renderAll();
       openDetail(current.id);
@@ -1069,16 +1518,22 @@
     const duplicate = performanceItems.some((item) => (
       item.scope === scope &&
       item.metricId === metricId &&
-      (scope === "department" || item.groupId === groupId)
+      (scope === "department" || item.groupId === groupId) &&
+      (scope !== "person" || item.memberId === memberId)
     ));
     if (duplicate) {
       notify("当前范围已配置该绩效指标，请从指标详情中调整目标", "error");
       return;
     }
 
+    const groupIndex = GROUPS.findIndex((group) => group.id === groupId);
+    const group = getGroup(groupId);
+    const memberIndex = group ? group.members.findIndex((person) => person.id === memberId) : -1;
     const actualScale = scope === "department"
       ? 0.96
-      : 0.9 + (GROUPS.findIndex((group) => group.id === groupId) * 0.035);
+      : scope === "group"
+        ? 0.9 + (groupIndex * 0.035)
+        : 0.9 + (((Math.max(groupIndex, 0) * 4) + Math.max(memberIndex, 0)) % 5) * 0.05;
     const actual = roundValue(metricItem.sampleActual * actualScale, metricItem.unit);
     const item = performance(
       "custom-" + customItemCounter,
@@ -1087,19 +1542,76 @@
       metricId,
       actual,
       storedTarget,
-      storedChallenge
+      storedChallenge,
+      memberId,
+      scope === "person" ? "personal" : null
     );
     customItemCounter += 1;
     performanceItems.push(item);
+    if (scope === "group") syncPersonItemsForGroupMetric(item);
     activeLevel = scope;
     if (groupId) activeGroupId = groupId;
+    activeMemberId = scope === "person" ? memberId : null;
     activeCategory = "all";
     activeStatus = "all";
+    currentPage = 1;
     $("performanceCategorySelect").value = "all";
     $("performanceStatusSelect").value = "all";
     closeConfig();
     renderAll();
     notify("绩效指标已配置");
+  }
+
+  function openGroup(groupId) {
+    const group = getGroup(groupId);
+    if (!group || !canOpenGroup(groupId)) return;
+    activeLevel = "group";
+    activeGroupId = groupId;
+    activeMemberId = null;
+    activeStatus = "all";
+    currentPage = 1;
+    $("performanceStatusSelect").value = "all";
+    closeDetail();
+    renderAll();
+    notify("已进入：" + group.name);
+  }
+
+  function openMember(memberId) {
+    const person = getMember(activeGroupId, memberId);
+    if (!person || !canOpenMember(activeGroupId, memberId)) return;
+    activeLevel = "person";
+    activeMemberId = memberId;
+    activeStatus = "all";
+    currentPage = 1;
+    $("performanceStatusSelect").value = "all";
+    closeDetail();
+    renderAll();
+    notify("已进入：" + person.name + "个人绩效视图");
+  }
+
+  function navigateToLevel(level) {
+    if (level === "department" && activeRoleId === "departmentHead") {
+      activeLevel = "department";
+      activeMemberId = null;
+    } else if (level === "group" && activeRoleId !== "member" && activeGroupId) {
+      activeLevel = "group";
+      activeMemberId = null;
+    } else {
+      return;
+    }
+    activeStatus = "all";
+    currentPage = 1;
+    $("performanceStatusSelect").value = "all";
+    closeDetail();
+    renderAll();
+  }
+
+  function goBack() {
+    if (activeLevel === "person" && activeRoleId !== "member") {
+      navigateToLevel("group");
+    } else if (activeLevel === "group" && activeRoleId === "departmentHead") {
+      navigateToLevel("department");
+    }
   }
 
   function switchRole(roleId) {
@@ -1108,8 +1620,10 @@
     activeRoleId = role.id;
     activeLevel = role.defaultLevel;
     activeGroupId = role.groupId || "group-2";
+    activeMemberId = role.memberId || null;
     activeCategory = "all";
     activeStatus = "all";
+    currentPage = 1;
     $("performanceCategorySelect").value = "all";
     $("performanceStatusSelect").value = "all";
     closeDetail();
@@ -1129,6 +1643,7 @@
       const button = event.target.closest("[data-period-type]");
       if (!button || button.dataset.periodType === activePeriodType) return;
       activePeriodType = button.dataset.periodType;
+      currentPage = 1;
       closeDetail();
       renderAll();
       notify("已切换为：" + activePeriodType + "绩效数据");
@@ -1136,6 +1651,7 @@
 
     $("performancePeriodSelect").addEventListener("change", (event) => {
       selectedPeriods[activePeriodType] = event.target.value;
+      currentPage = 1;
       closeDetail();
       renderAll();
       notify("统计周期已切换为：" + getPeriodLabel());
@@ -1145,10 +1661,13 @@
       if (getActiveRole().id !== "departmentHead") return;
       if (event.target.value === "all") {
         activeLevel = "department";
+        activeMemberId = null;
       } else {
         activeLevel = "group";
         activeGroupId = event.target.value;
+        activeMemberId = null;
       }
+      currentPage = 1;
       renderAll();
       const group = getGroup(activeGroupId);
       notify(activeLevel === "department" ? "已切换为部门绩效视图" : "已切换为：" + group.name);
@@ -1156,24 +1675,39 @@
 
     $("performanceCategorySelect").addEventListener("change", (event) => {
       activeCategory = event.target.value;
+      currentPage = 1;
       renderAll();
     });
 
     $("performanceStatusSelect").addEventListener("change", (event) => {
       activeStatus = event.target.value;
+      currentPage = 1;
+      renderTable();
+    });
+
+    $("performancePagination").addEventListener("click", (event) => {
+      const button = event.target.closest("[data-page-action]");
+      if (!button || button.disabled) return;
+      currentPage += button.dataset.pageAction === "next" ? 1 : -1;
       renderTable();
     });
 
     $("performanceGroupComparison").addEventListener("click", (event) => {
-      const button = event.target.closest("[data-group-entry]");
-      if (!button || getActiveRole().id !== "departmentHead") return;
-      activeGroupId = button.dataset.groupEntry;
-      activeLevel = "group";
-      activeStatus = "all";
-      $("performanceStatusSelect").value = "all";
-      renderAll();
-      notify("已切换为：" + getGroup(activeGroupId).name);
+      const groupButton = event.target.closest("[data-group-entry]");
+      if (groupButton) {
+        openGroup(groupButton.dataset.groupEntry);
+        return;
+      }
+      const memberButton = event.target.closest("[data-member-entry]");
+      if (memberButton) openMember(memberButton.dataset.memberEntry);
     });
+
+    $("performanceBreadcrumb").addEventListener("click", (event) => {
+      const button = event.target.closest("[data-performance-nav]");
+      if (button) navigateToLevel(button.dataset.performanceNav);
+    });
+
+    $("performanceBackButton").addEventListener("click", goBack);
 
     document.addEventListener("click", (event) => {
       const detailButton = event.target.closest("[data-detail-id]");
@@ -1200,14 +1734,36 @@
     });
 
     $("configScope").addEventListener("change", () => {
-      syncConfigGroupState();
-      const availableMetric = findUnconfiguredMetric($("configScope").value, $("configGroup").value);
+      syncConfigScopeState();
+      const availableMetric = findUnconfiguredMetric(
+        $("configScope").value,
+        $("configGroup").value,
+        $("configMember").value
+      );
       $("configMetric").value = availableMetric.id;
       syncMetricFields();
     });
 
     $("configGroup").addEventListener("change", () => {
-      const availableMetric = findUnconfiguredMetric("group", $("configGroup").value);
+      renderConfigMemberOptions(
+        $("configGroup").value,
+        $("configMember").value
+      );
+      const availableMetric = findUnconfiguredMetric(
+        $("configScope").value,
+        $("configGroup").value,
+        $("configMember").value
+      );
+      $("configMetric").value = availableMetric.id;
+      syncMetricFields();
+    });
+
+    $("configMember").addEventListener("change", () => {
+      const availableMetric = findUnconfiguredMetric(
+        "person",
+        $("configGroup").value,
+        $("configMember").value
+      );
       $("configMetric").value = availableMetric.id;
       syncMetricFields();
     });

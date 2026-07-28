@@ -22,7 +22,7 @@
       <nav class="app-menu" id="appMenu" aria-label="主菜单"></nav>
       <div class="sidebar-scope">
         <span>当前原型范围</span>
-        <strong>部门 / 业务组绩效看板</strong>
+        <strong>部门 / 业务组 / 个人绩效看板</strong>
       </div>
     </aside>
 
@@ -49,7 +49,7 @@
       <section class="app-content">
         <div class="page-header">
           <div class="page-title">
-            <div class="breadcrumb">
+            <div class="breadcrumb" id="performanceBreadcrumb">
               <span>首页</span>
               <span>/</span>
               <span class="current">绩效看板</span>
@@ -58,6 +58,10 @@
             <p id="performancePageDescription">汇总部门及各业务组的实际完成值、目标值与挑战值，及时识别未达目标指标。</p>
           </div>
           <div class="page-actions">
+            <button type="button" class="secondary-btn hidden" id="performanceBackButton">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+              返回上一级
+            </button>
             <button type="button" class="primary-btn" id="openPerformanceConfig">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
               设置绩效指标
@@ -65,13 +69,13 @@
           </div>
         </div>
 
-        <section class="panel dashboard-control-panel" aria-label="演示身份与绩效筛选条件">
+        <section class="panel dashboard-control-panel" aria-label="角色身份与绩效筛选条件">
           <div class="dashboard-role-row">
             <div class="dashboard-control-copy">
-              <span class="field-label">演示身份</span>
-              <p>原型按身份切换部门或所属业务组的绩效查看范围。</p>
+              <span class="field-label">角色身份</span>
+              <p id="performanceRoleHint">部门负责人查看部门及各业务组绩效，可切换业务组并设置指标。</p>
             </div>
-            <div class="dashboard-role-tabs" id="performanceRoleTabs" aria-label="切换演示身份"></div>
+            <div class="dashboard-role-tabs" id="performanceRoleTabs" aria-label="切换角色身份"></div>
           </div>
           <div class="dashboard-filter-row">
             <div class="dashboard-control-copy">
@@ -124,7 +128,7 @@
         <section class="performance-summary-grid" id="performanceSummary" aria-label="绩效概览"></section>
 
         <section class="performance-overview-grid">
-          <article class="panel performance-group-panel">
+          <article class="panel performance-group-panel" id="performanceScopePanel">
             <div class="panel-head">
               <div>
                 <h2 id="performanceGroupTitle">各业务组绩效达成情况</h2>
@@ -173,6 +177,7 @@
               <tbody id="performanceTableBody"></tbody>
             </table>
           </div>
+          <div class="performance-pagination" id="performancePagination" aria-label="绩效指标分页"></div>
         </section>
       </section>
     </main>
@@ -207,7 +212,7 @@
     <div class="drawer-head">
       <div>
         <h2 id="performanceConfigTitle">设置绩效指标</h2>
-        <p>目标值与挑战值由业务方维护，实际完成值由指标结果统一呈现。</p>
+        <p>目标值与挑战值由对应权限角色维护，实际完成值由指标结果统一呈现。</p>
       </div>
       <button type="button" class="icon-only-btn" id="closePerformanceConfig" aria-label="关闭绩效指标设置">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
@@ -218,7 +223,7 @@
         <section class="performance-form-section">
           <div class="performance-form-section-head">
             <span>1</span>
-            <div><h3>适用范围</h3><p>确定指标所属年度、配置范围与业务组。</p></div>
+            <div><h3>适用范围</h3><p>确定指标所属年度及部门、业务组或个人范围。</p></div>
           </div>
           <div class="form-grid">
             <label class="field">
@@ -233,11 +238,16 @@
               <select id="configScope" required>
                 <option value="department">部门</option>
                 <option value="group">业务组</option>
+                <option value="person">个人</option>
               </select>
             </label>
-            <label class="field full" id="configGroupField">
+            <label class="field" id="configGroupField">
               <span>业务组<span class="required-mark">*</span></span>
               <select id="configGroup"></select>
+            </label>
+            <label class="field" id="configMemberField">
+              <span>组员<span class="required-mark">*</span></span>
+              <select id="configMember" required></select>
             </label>
           </div>
         </section>

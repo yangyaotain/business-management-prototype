@@ -33,19 +33,23 @@
             <p id="reportPageDescription">查看部门及各业务组指标，支持组织穿透、同比环比分析和报告输出。</p>
           </div>
           <div class="page-actions">
+            <button type="button" class="secondary-btn hidden" id="reportBackButton">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/><path d="M9 12h10"/></svg>
+              返回上一级
+            </button>
             <div class="report-data-badge"><span>统计周期</span><strong id="reportPeriodBadge">2026年7月</strong></div>
             <button type="button" class="secondary-btn" id="exportDataButton"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>导出数据</button>
-            <button type="button" class="primary-btn" id="generateReportButton"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"/><path d="M14 3v5h5M9 12h6M9 16h6"/></svg>生成报告</button>
+            <button type="button" class="primary-btn" id="manageReportButton"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/><path d="M17 16.5h.01"/></svg>报告管理</button>
           </div>
         </div>
 
-        <section class="panel dashboard-control-panel" aria-label="演示身份与统计条件">
+        <section class="panel dashboard-control-panel" aria-label="角色身份与统计条件">
           <div class="dashboard-role-row">
             <div class="dashboard-control-copy">
-              <span class="field-label">演示身份</span>
+              <span class="field-label">角色身份</span>
               <p>原型按身份切换部门、业务组和个人的可查看范围。</p>
             </div>
-            <div class="dashboard-role-tabs" id="reportRoleTabs" aria-label="切换演示身份"></div>
+            <div class="dashboard-role-tabs" id="reportRoleTabs" aria-label="切换角色身份"></div>
           </div>
           <div class="dashboard-filter-row">
             <div class="dashboard-control-copy">
@@ -80,9 +84,9 @@
         <div class="report-level-path" id="reportLevelPath"></div>
         <section class="report-summary-grid" id="reportSummaryGrid"></section>
 
-        <section class="panel report-section" id="organizationPanel">
-          <div class="panel-head"><div><h2 id="organizationPanelTitle">业务组指标对比</h2><p id="organizationPanelDescription">点击业务组名称进入本组报表</p></div><span class="status-tag pending" id="organizationCount"></span></div>
-          <div class="report-table-wrap"><table class="report-table organization-table"><thead id="organizationTableHead"></thead><tbody id="organizationTableBody"></tbody></table></div>
+        <section class="panel report-section dashboard-organization-panel" id="organizationPanel">
+          <div class="panel-head"><div><h2 id="organizationPanelTitle">业务组报表概览</h2><p id="organizationPanelDescription">横向比较各业务组核心报表指标，点击业务组名称进入本组报表。</p></div><span class="dashboard-organization-count" id="organizationCount"></span></div>
+          <div class="report-table-wrap dashboard-organization-table-wrap"><table class="report-table organization-table dashboard-organization-table"><colgroup><col style="width:176px"><col style="width:104px"><col><col><col><col><col><col></colgroup><thead id="organizationTableHead"></thead><tbody id="organizationTableBody"></tbody></table></div>
         </section>
 
         <section class="panel report-section">
@@ -90,7 +94,7 @@
             <div><h2>指标明细报表</h2><p>展开指标查看基础组成数据，查看明细可穿透到项目或标段记录。</p></div>
             <div class="metric-tabs" id="metricCategoryTabs"></div>
           </div>
-          <div class="report-table-wrap"><table class="report-table metric-report-table"><thead><tr><th class="sticky-name">指标名称</th><th>当前区间值</th><th>上期值</th><th class="mom-col">环比</th><th>同期值</th><th class="yoy-col">同比</th><th>年度目标</th><th>年度累计</th><th>完成进度</th><th class="sticky-action">操作</th></tr></thead><tbody id="metricReportBody"></tbody></table></div>
+          <div class="report-table-wrap"><table class="report-table metric-report-table"><thead><tr><th class="sticky-name">指标名称</th><th>当前区间值</th><th>上期值</th><th class="mom-col">环比</th><th>同期值</th><th class="yoy-col">同比</th><th>年度目标</th><th>年度累计</th><th class="progress-head">完成进度</th><th class="sticky-action">操作</th></tr></thead><tbody id="metricReportBody"></tbody></table></div>
         </section>
       </section>
     </main>
@@ -98,6 +102,7 @@
   <div id="reportOverlayRoot"></div>
   <script src="../assets/js/navigation.js"></script>
   <script src="../assets/js/common.js"></script>
+  <script src="../assets/vendor/exceljs.min.js"></script>
   <script src="../assets/js/reports.js"></script>
 </body>
 </html>

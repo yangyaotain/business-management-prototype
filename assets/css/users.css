@@ -12,7 +12,7 @@
 .um-head h1 {
   margin: 0;
   color: var(--heading);
-  font-size: 22px;
+  font-size: var(--font-size-page-title);
 }
 
 .um-head p {
@@ -82,7 +82,7 @@
   border: 1px solid #e7ecf3;
   border-radius: 8px;
   outline: none;
-  font-size: 12.5px;
+  font-size: var(--font-size-control);
   transition: background .16s, border-color .16s, box-shadow .16s;
 }
 
@@ -243,7 +243,7 @@
 }
 
 .um-tree-children .um-tree-row {
-  font-size: 12.5px;
+  font-size: var(--font-size-body);
 }
 
 .um-tree-edit-input {
@@ -255,7 +255,7 @@
   border: 1px solid var(--focus-border);
   border-radius: 6px;
   outline: none;
-  font-size: 12.5px;
+  font-size: var(--font-size-control);
   font-weight: 700;
   box-shadow: 0 0 0 3px rgba(var(--primary-rgb), .12);
 }
@@ -413,7 +413,7 @@
   background: transparent;
   border: 0;
   cursor: pointer;
-  font-size: 12.5px;
+  font-size: var(--font-size-control);
   font-weight: 800;
 }
 
@@ -443,7 +443,7 @@
 
 .um-pg-info {
   color: #64748b;
-  font-size: 12.5px;
+  font-size: var(--font-size-secondary);
 }
 
 .um-pg-buttons {
@@ -626,7 +626,7 @@
 .um-drawer-head p {
   margin: 6px 0 0;
   color: #64748b;
-  font-size: 12.5px;
+  font-size: var(--font-size-secondary);
 }
 
 .um-drawer-close {

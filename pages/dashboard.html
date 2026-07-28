@@ -22,7 +22,7 @@
       <nav class="app-menu" id="appMenu" aria-label="主菜单"></nav>
       <div class="sidebar-scope">
         <span>当前原型范围</span>
-        <strong>工作台 · 28项业务交付指标</strong>
+        <strong>工作台 · 58项业务交付指标</strong>
       </div>
     </aside>
 
@@ -34,13 +34,13 @@
           </button>
           <div class="topbar-title">
             <strong>业务管理工作台</strong>
-            <span id="topbarViewDescription">部门负责人 · 月度交付指标视图</span>
+            <span id="topbarViewDescription">项目经理 · 月度交付指标视图</span>
           </div>
         </div>
         <div class="topbar-actions">
           <button type="button" class="user-trigger" aria-expanded="false">
-            <div class="avatar" id="currentUserAvatar">陈</div>
-            <div class="user-copy"><strong id="currentUserName">陈建</strong><span id="currentUserRole">部门负责人</span></div>
+            <div class="avatar" id="currentUserAvatar">李</div>
+            <div class="user-copy"><strong id="currentUserName">李文</strong><span id="currentUserRole">项目经理</span></div>
             <span class="chevron"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></span>
           </button>
         </div>
@@ -51,17 +51,17 @@
           <div class="page-title">
             <div class="breadcrumb"><span>首页</span><span>/</span><span class="current">工作台</span></div>
             <h1>业务交付指标工作台</h1>
-            <p id="pageViewDescription">按部门负责人职责查看月度交付指标状态，识别异常并穿透查看部门与业务组明细。</p>
+            <p id="pageViewDescription">按项目经理职责查看月度交付指标状态，识别异常并穿透查看个人与所属业务组明细。</p>
           </div>
         </div>
 
-        <section class="panel dashboard-control-panel" aria-label="演示身份与统计周期">
+        <section class="panel dashboard-control-panel" aria-label="角色身份与统计周期">
           <div class="dashboard-role-row">
             <div class="dashboard-control-copy">
-              <span class="field-label">演示身份</span>
-              <p>原型按身份切换部门、业务组和组员可查看的交付指标范围。</p>
+              <span class="field-label">角色身份</span>
+              <p>按项目经理、业务组长、质量审核和部门负责人职责匹配可查看指标。</p>
             </div>
-            <div class="dashboard-role-tabs" id="roleViewTabs" aria-label="切换演示身份"></div>
+            <div class="dashboard-role-tabs" id="roleViewTabs" aria-label="切换角色身份"></div>
           </div>
           <div class="dashboard-filter-row">
             <div class="dashboard-control-copy">
@@ -105,7 +105,7 @@
         <section class="dashboard-overview-grid">
           <article class="panel">
             <div class="panel-head">
-              <div><h2>指标状态分布</h2><p id="statusOverviewDescription">统计口径：部门负责人 · 月度指标</p></div>
+              <div><h2>指标状态分布</h2><p id="statusOverviewDescription">统计口径：项目经理 · 月度指标</p></div>
               <span class="status-tag pending" id="currentPeriodTag">2026年7月</span>
             </div>
             <div class="status-overview-body" id="statusOverview"></div>
@@ -120,12 +120,35 @@
 
         <section class="panel indicator-panel">
           <div class="panel-head indicator-panel-head">
-            <div><h2 id="indicatorPanelTitle">部门负责人月度交付指标</h2><p id="indicatorResultText">点击指标卡查看口径与业务组明细</p></div>
+            <div><h2 id="indicatorPanelTitle">项目经理月度交付指标</h2><p id="indicatorResultText">点击指标卡查看口径与个人明细</p></div>
             <div class="indicator-tabs" id="indicatorTabs" aria-label="指标分类"></div>
           </div>
           <div class="indicator-panel-body">
+            <div class="indicator-metric-toolbar" aria-label="交付指标查询条件">
+              <label class="indicator-metric-search">
+                <span class="sr-only">查询指标名称</span>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+                <input type="search" id="metricNameQuery" placeholder="请输入指标名称" autocomplete="off" />
+              </label>
+              <div class="indicator-metric-toolbar-actions">
+                <label class="indicator-metric-status-filter">
+                  <span>状态</span>
+                  <select class="form-select" id="metricStatusFilter" aria-label="筛选指标状态">
+                    <option value="all">全部状态</option>
+                    <option value="normal">正常</option>
+                    <option value="abnormal">异常</option>
+                  </select>
+                </label>
+                <span class="indicator-metric-result-count" id="metricFilterResultCount" aria-live="polite">筛选结果 0 项</span>
+                <button type="button" class="indicator-metric-clear hidden" id="metricFilterReset">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M8 11v6M12 11v6M16 11v6M6 7l1 14h10l1-14"/></svg>
+                  <span>清空筛选</span>
+                </button>
+              </div>
+            </div>
             <div class="metric-grid" id="metricGrid"></div>
           </div>
+          <div class="dashboard-pagination hidden" id="metricPagination" aria-label="交付指标分页"></div>
         </section>
       </section>
     </main>

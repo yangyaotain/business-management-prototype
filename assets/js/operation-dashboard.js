@@ -18,18 +18,12 @@
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
     back:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>',
-    view:
-      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.5"/></svg>',
     scale:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
     quality:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 6v5c0 4.6 2.9 8.2 7 10 4.1-1.8 7-5.4 7-10V6l-7-3z"/><path d="m9 12 2 2 4-5"/></svg>',
     timeliness:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
-    alert:
-      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2.8 19h18.4L12 3z"/><path d="M12 9v4M12 17h.01"/></svg>',
-    check:
-      '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg>',
     metric:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg>',
     target:
@@ -160,9 +154,9 @@
   ];
 
   const METRICS = [
-    metric("tenderCount", "招标数量", "scale", ["proxy"], 326, 540, "count", "项", "high", true, "统计周期内已开展的招标项目数量。"),
-    metric("dealCount", "成交数量", "scale", ["proxy"], 284, 450, "count", "项", "high", true, "统计周期内已完成成交的标段数量。"),
-    metric("transactionAmount", "交易规模", "scale", ["proxy", "cost"], 42.8, 68, "currency", "亿元", "high", true, "统计周期内累计交易金额。"),
+    metric("tenderCount", "招标数量", "scale", ["proxy"], 289, 540, "count", "项", "high", true, "统计周期内已开展的招标项目数量。"),
+    metric("dealCount", "成交数量", "scale", ["proxy"], 265, 450, "count", "项", "high", true, "统计周期内已完成成交的标段数量。"),
+    metric("transactionAmount", "交易规模", "scale", ["proxy", "cost"], 44.5, 68, "currency", "亿元", "high", true, "统计周期内累计交易金额。"),
     metric("revenue", "营收", "scale", ["proxy", "cost"], 3860, 6200, "currency", "万元", "high", true, "统计周期内累计确认营业收入。"),
     metric("abnormalCount", "异常数量", "timeliness", ["general"], 14, 0, "count", "项", "low", true, "当前累计确认的异常业务事项数量。"),
     metric("successRate", "采购成功率", "quality", ["proxy"], 94.1, 92, "rate", "%", "high", false, "成交项目中采购成功项目的占比。"),
@@ -194,7 +188,8 @@
   };
   let activeBusinessType = "all";
   let activeCategory = "all";
-  let selectedComparisonMetricId = "revenue";
+  let metricKeyword = "";
+  let activeMetricStatus = "all";
 
   const $ = (id) => document.getElementById(id);
 
@@ -292,10 +287,18 @@
     return METRICS.filter((metricItem) => isMetricVisibleForBusiness(metricItem));
   }
 
-  function getFilteredMetrics() {
-    return getVisibleMetrics().filter((metricItem) => (
-      activeCategory === "all" || metricItem.category === activeCategory
-    ));
+  function getFilteredMetricResults(context) {
+    const keyword = metricKeyword.trim().toLocaleLowerCase("zh-CN");
+    return getVisibleMetrics()
+      .filter((metricItem) => activeCategory === "all" || metricItem.category === activeCategory)
+      .map((metricItem) => ({
+        metricItem,
+        result: getMetricResult(metricItem, context)
+      }))
+      .filter(({ metricItem, result }) => {
+        if (keyword && !metricItem.name.toLocaleLowerCase("zh-CN").includes(keyword)) return false;
+        return activeMetricStatus === "all" || result.targetStatus === activeMetricStatus;
+      });
   }
 
   function getBusinessFactor(metricItem) {
@@ -393,6 +396,7 @@
       : actual <= benchmark;
     const score = calculateScore(metricItem, actual, benchmark, normal);
     const targetProgress = calculateTargetProgress(metricItem, actual, target);
+    const targetStatus = getTargetStatus(metricItem, actual, target, normal);
 
     return {
       actual,
@@ -401,10 +405,11 @@
       normal,
       score,
       targetProgress,
+      targetStatus,
       actualDisplay: formatMetricValue(metricItem, actual),
       targetDisplay: formatMetricValue(metricItem, target),
       benchmarkDisplay: formatMetricValue(metricItem, benchmark),
-      progressLabel: getProgressLabel(metricItem, actual, target, normal),
+      progressLabel: getProgressLabel(metricItem, actual, target, normal, targetStatus),
       gapLabel: getGapLabel(metricItem, actual, benchmark, normal)
     };
   }
@@ -447,15 +452,29 @@
     return actual <= target ? 100 : Math.max(8, (target / actual) * 100);
   }
 
-  function getProgressLabel(metricItem, actual, target, normal) {
-    if (metricItem.direction === "high" && metricItem.cumulative) {
-      const rate = target > 0 ? Math.round((actual / target) * 100) : 0;
-      return "本期目标完成 " + rate + "%";
-    }
+  function getTargetStatus(metricItem, actual, target, normal) {
+    if (metricItem.direction === "low") return normal ? "controlled" : "risk";
+    if (actual < target) return "unmet";
+    if (actual === target) return "completed";
+    return "exceeded";
+  }
+
+  function getProgressLabel(metricItem, actual, target, normal, targetStatus) {
     if (metricItem.direction === "high") {
-      return normal ? "已达到目标" : "低于目标";
+      const rate = target > 0 ? Math.round((actual / target) * 100) : 0;
+      if (targetStatus === "unmet") return "未达成目标 " + rate + "%";
+      if (targetStatus === "completed") return "完成目标 " + rate + "%";
+      return "超出目标 " + rate + "%";
     }
     return normal ? "控制在目标内" : "超过控制目标";
+  }
+
+  function getTargetStatusLabel(targetStatus) {
+    if (targetStatus === "unmet") return "未达成";
+    if (targetStatus === "completed") return "完成目标";
+    if (targetStatus === "exceeded") return "超出目标";
+    if (targetStatus === "controlled") return "控制达标";
+    return "超过控制";
   }
 
   function getGapLabel(metricItem, actual, benchmark, normal) {
@@ -506,7 +525,6 @@
     activeGroupId = role.groupId || null;
     activeMemberId = role.memberId || null;
     activeCategory = "all";
-    selectedComparisonMetricId = "revenue";
   }
 
   function canOpenGroup(groupId) {
@@ -577,6 +595,14 @@
     $("operationScopeLabel").textContent = scopeLabel;
     $("dataCutoffText").textContent = periodLabel;
     renderScopePath();
+    renderPageActions();
+  }
+
+  function renderPageActions() {
+    const canBack =
+      (activeLevel === "group" && activeRoleId === "departmentHead") ||
+      (activeLevel === "person" && activeRoleId !== "member");
+    $("operationBackButton").classList.toggle("hidden", !canBack);
   }
 
   function renderScopePath() {
@@ -643,7 +669,7 @@
       const result = getMetricResult(metricItem, context);
       return [
         '<article class="card operation-summary-card ',
-        result.normal ? "normal" : "risk",
+        result.targetStatus,
         '">',
         '<div class="operation-summary-top"><span class="operation-summary-name">',
         escapeHTML(metricItem.name),
@@ -685,66 +711,69 @@
   }
 
   function renderGroupPanel() {
-    $("operationScopePanelTitle").textContent = "业务组运行情况";
-    $("operationScopePanelDescription").textContent = "点击业务组名称进入本组看板，查看组员和目标完成情况。";
-    $("operationScopePanelMeta").textContent = GROUPS.length + "个业务组";
+    const overviewMetrics = getOverviewMetrics();
+    $("operationScopePanelTitle").textContent = "业务组运营概览";
+    $("operationScopePanelDescription").textContent = "横向比较各业务组核心运营指标，点击业务组名称进入本组看板。";
+    $("operationScopePanelMeta").textContent = GROUPS.length + " 个业务组";
     $("operationScopePanelBody").innerHTML = [
-      '<div class="operation-group-grid">',
+      '<div class="operation-member-table-wrap dashboard-organization-table-wrap"><table class="operation-member-table operation-group-overview-table dashboard-organization-table">',
+      '<colgroup><col style="width:176px"><col style="width:104px">',
+      overviewMetrics.map(() => '<col style="width:96px">').join(""),
+      '<col style="width:112px"><col style="width:104px"></colgroup>',
+      "<thead><tr><th>业务组</th><th>负责人</th>",
+      overviewMetrics.map((metricItem) => (
+        '<th class="operation-table-numeric">' + escapeHTML(metricItem.name) + "</th>"
+      )).join(""),
+      '<th class="operation-table-numeric">综合达成度</th><th class="operation-table-center">未达标指标</th></tr></thead><tbody>',
       GROUPS.map((group) => {
         const context = getEntityContext("group", group.id, null);
         const evaluation = getOverallEvaluation(context);
         return [
-          '<button type="button" class="operation-group-card" data-group-id="',
+          '<tr><td><button type="button" class="operation-group-name-button dashboard-organization-link" data-group-id="',
           group.id,
-          '">',
-          '<div class="operation-group-card-head"><div class="operation-group-name"><strong>',
+          '"><span>',
           escapeHTML(group.name),
-          '</strong><span>组长：',
-          escapeHTML(group.leader),
-          " · ",
-          group.members.length,
-          '名组员</span></div><span class="operation-group-arrow">',
+          "</span>",
           ICONS.arrow,
-          "</span></div>",
-          '<div class="operation-group-score"><strong>',
+          "</button></td><td>",
+          escapeHTML(group.leader),
+          "</td>",
+          overviewMetrics.map((metricItem) => (
+            renderOverviewMetricValue(metricItem, getMetricResult(metricItem, context))
+          )).join(""),
+          '<td class="operation-table-numeric"><strong class="operation-table-score">',
           evaluation.score,
-          '%</strong><span>综合目标达成度</span></div>',
-          '<div class="operation-progress-track"><span style="width:',
-          evaluation.score,
-          '%"></span></div>',
-          '<div class="operation-group-card-foot"><span>',
-          evaluation.total,
-          '项运营指标</span><span class="',
-          evaluation.unmet ? "risk-text" : "",
+          '%</strong></td><td class="operation-table-center"><span class="status-tag ',
+          evaluation.unmet ? "risk" : "normal",
           '">',
           evaluation.unmet,
-          "项未达标</span></div>",
-          "</button>"
+          "项</span></td></tr>"
         ].join("");
       }).join(""),
-      "</div>"
+      "</tbody></table></div>"
     ].join("");
   }
 
   function renderMemberPanel() {
     const group = getActiveGroup();
     if (!group) return;
-    const headline = getHeadlineMetrics();
-    $("operationScopePanelTitle").textContent = group.name + "组员情况";
-    $("operationScopePanelDescription").textContent = "点击组员姓名或“查看个人”进入个人看板。";
+    const overviewMetrics = getOverviewMetrics();
+    $("operationScopePanelTitle").textContent = group.name + "组员运营概览";
+    $("operationScopePanelDescription").textContent = "横向比较组员核心运营指标，点击组员姓名进入个人看板。";
     $("operationScopePanelMeta").textContent = group.members.length + "名组员";
     $("operationScopePanelBody").innerHTML = [
       '<div class="operation-member-table-wrap"><table class="operation-member-table">',
-      "<thead><tr><th>组员</th><th>岗位</th><th>",
-      escapeHTML(headline.primary.name),
-      "</th><th>",
-      escapeHTML(headline.secondary.name),
-      "</th><th>综合目标达成度</th><th>未达标指标</th><th>操作</th></tr></thead>",
+      '<colgroup><col style="width:154px"><col style="width:108px">',
+      overviewMetrics.map(() => '<col style="width:112px">').join(""),
+      '<col style="width:124px"><col style="width:110px"></colgroup>',
+      "<thead><tr><th>组员</th><th>岗位</th>",
+      overviewMetrics.map((metricItem) => (
+        '<th class="operation-table-numeric">' + escapeHTML(metricItem.name) + "</th>"
+      )).join(""),
+      '<th class="operation-table-numeric">综合达成度</th><th class="operation-table-center">未达标指标</th></tr></thead>',
       "<tbody>",
       group.members.map((person) => {
         const context = getEntityContext("person", group.id, person.id);
-        const primaryResult = getMetricResult(headline.primary, context);
-        const secondaryResult = getMetricResult(headline.secondary, context);
         const evaluation = getOverallEvaluation(context);
         return [
           '<tr><td><button type="button" class="operation-member-name" data-member-id="',
@@ -755,21 +784,17 @@
           escapeHTML(person.name),
           "</button></td><td>",
           escapeHTML(person.role),
-          "</td><td>",
-          escapeHTML(primaryResult.actualDisplay),
-          "</td><td>",
-          escapeHTML(secondaryResult.actualDisplay),
-          '</td><td><strong>',
+          "</td>",
+          overviewMetrics.map((metricItem) => (
+            renderOverviewMetricValue(metricItem, getMetricResult(metricItem, context))
+          )).join(""),
+          '<td class="operation-table-numeric"><strong class="operation-table-score">',
           evaluation.score,
-          '%</strong></td><td><span class="status-tag ',
+          '%</strong></td><td class="operation-table-center"><span class="status-tag ',
           evaluation.unmet ? "risk" : "normal",
           '">',
           evaluation.unmet,
-          '项</span></td><td><button type="button" class="operation-table-action" data-member-id="',
-          person.id,
-          '">',
-          ICONS.view,
-          "查看个人</button></td></tr>"
+          "项</span></td></tr>"
         ].join("");
       }).join(""),
       "</tbody></table></div>"
@@ -832,152 +857,25 @@
     };
   }
 
-  function ensureComparisonMetric() {
-    const visibleMetrics = getVisibleMetrics();
-    if (!visibleMetrics.some((metricItem) => metricItem.id === selectedComparisonMetricId)) {
-      selectedComparisonMetricId = visibleMetrics.length ? visibleMetrics[0].id : null;
-    }
-  }
-
-  function renderComparison() {
-    ensureComparisonMetric();
-    const selectField = $("operationComparisonSelectField");
-    const select = $("operationComparisonMetricSelect");
-
-    if (activeLevel === "person") {
-      selectField.classList.add("hidden");
-      renderPersonCategoryComparison();
-      return;
-    }
-
-    selectField.classList.remove("hidden");
-    const visibleMetrics = getVisibleMetrics();
-    select.innerHTML = visibleMetrics.map((metricItem) => [
-      '<option value="',
-      metricItem.id,
-      '"',
-      metricItem.id === selectedComparisonMetricId ? " selected" : "",
-      ">",
-      escapeHTML(metricItem.name),
-      "</option>"
-    ].join("")).join("");
-
-    const selectedMetric = getMetric(selectedComparisonMetricId);
-    if (!selectedMetric) {
-      $("operationComparisonBody").innerHTML = "";
-      return;
-    }
-
-    const comparisonItems = activeLevel === "department"
-      ? GROUPS.map((group) => ({
-        label: group.name,
-        context: getEntityContext("group", group.id, null)
-      }))
-      : getActiveGroup().members.map((person) => ({
-        label: person.name,
-        context: getEntityContext("person", getActiveGroup().id, person.id)
-      }));
-
-    $("operationComparisonTitle").textContent = activeLevel === "department"
-      ? "各业务组目标对比"
-      : "组员目标对比";
-    $("operationComparisonDescription").textContent =
-      "当前对比：" + selectedMetric.name + "，蓝色为本期实际，灰色为本期目标。";
-    $("operationComparisonBody").innerHTML = [
-      comparisonItems.map((item) => renderComparisonRow(item.label, selectedMetric, getMetricResult(selectedMetric, item.context))).join(""),
-      '<div class="operation-comparison-legend"><span><i></i>本期实际</span><span class="target"><i></i>本期目标</span></div>'
-    ].join("");
-  }
-
-  function renderComparisonRow(label, metricItem, result) {
-    const maximum = Math.max(result.actual, result.target, 1);
-    const actualWidth = Math.max(result.actual > 0 ? 4 : 0, (result.actual / maximum) * 100);
-    const targetWidth = Math.max(result.target > 0 ? 4 : 0, (result.target / maximum) * 100);
+  function getOverviewMetrics() {
     return [
-      '<div class="operation-comparison-item"><span class="operation-comparison-name" title="',
-      escapeHTML(label),
+      "tenderCount",
+      "dealCount",
+      "transactionAmount",
+      "revenue",
+      "successRate",
+      "abnormalCount"
+    ].map(getMetric).filter(Boolean);
+  }
+
+  function renderOverviewMetricValue(metricItem, result) {
+    return [
+      '<td class="operation-table-numeric"><span class="operation-table-metric-value ',
+      result.normal ? (metricItem.id === "successRate" ? "positive" : "") : "risk",
       '">',
-      escapeHTML(label),
-      '</span><div class="operation-comparison-bars">',
-      '<div class="operation-comparison-bar actual" title="实际 ',
       escapeHTML(result.actualDisplay),
-      '"><span style="width:',
-      actualWidth,
-      '%"></span></div>',
-      '<div class="operation-comparison-bar target" title="目标 ',
-      escapeHTML(result.targetDisplay),
-      '"><span style="width:',
-      targetWidth,
-      '%"></span></div>',
-      '</div><strong class="operation-comparison-rate ',
-      result.normal ? "" : "risk",
-      '">',
-      Math.round(result.targetProgress),
-      "%</strong></div>"
+      "</span></td>"
     ].join("");
-  }
-
-  function renderPersonCategoryComparison() {
-    const context = getEntityContext();
-    const categoryItems = CATEGORIES.filter((category) => category.id !== "all").map((category) => {
-      const metrics = getVisibleMetrics().filter((metricItem) => metricItem.category === category.id);
-      const score = metrics.length
-        ? Math.round(metrics.reduce((sum, metricItem) => sum + getMetricResult(metricItem, context).score, 0) / metrics.length)
-        : 0;
-      return { label: category.label, score };
-    }).filter((item) => item.score || getVisibleMetrics().some((metricItem) => getCategoryLabel(metricItem.category) === item.label));
-
-    $("operationComparisonTitle").textContent = "个人分类目标达成";
-    $("operationComparisonDescription").textContent = "按业务规模、交付质量和时效风险汇总个人目标达成情况。";
-    $("operationComparisonBody").innerHTML = categoryItems.map((item) => [
-      '<div class="operation-comparison-item"><span class="operation-comparison-name">',
-      escapeHTML(item.label),
-      '</span><div class="operation-comparison-bars"><div class="operation-comparison-bar actual"><span style="width:',
-      item.score,
-      '%"></span></div><div class="operation-comparison-bar target"><span style="width:100%"></span></div></div><strong class="operation-comparison-rate ',
-      item.score >= 100 ? "" : "risk",
-      '">',
-      item.score,
-      "%</strong></div>"
-    ].join("")).join("") +
-      '<div class="operation-comparison-legend"><span><i></i>当前达成度</span><span class="target"><i></i>目标基线</span></div>';
-  }
-
-  function renderAttention() {
-    const context = getEntityContext();
-    const attentionItems = getVisibleMetrics().map((metricItem) => ({
-      metric: metricItem,
-      result: getMetricResult(metricItem, context)
-    })).filter((item) => !item.result.normal).sort((a, b) => a.result.score - b.result.score);
-
-    $("operationAttentionCount").textContent = attentionItems.length + "项";
-    $("operationAttentionDescription").textContent =
-      getBusinessTypeLabel() + "业务 · " + getCurrentPeriodOption().label;
-
-    if (!attentionItems.length) {
-      $("operationAttentionList").innerHTML = [
-        '<div class="operation-attention-empty">',
-        ICONS.check,
-        "<strong>当前指标均达到序时要求</strong>",
-        "<span>可继续关注本期目标完成进度</span>",
-        "</div>"
-      ].join("");
-      return;
-    }
-
-    $("operationAttentionList").innerHTML = attentionItems.slice(0, 5).map((item) => [
-      '<div class="operation-attention-item"><span class="operation-attention-icon">',
-      ICONS.alert,
-      '</span><div class="operation-attention-copy"><strong>',
-      escapeHTML(item.metric.name),
-      '</strong><span>实际 ',
-      escapeHTML(item.result.actualDisplay),
-      " · ",
-      item.metric.cumulative && item.result.target > 0 ? "序时目标 " + escapeHTML(item.result.benchmarkDisplay) : "目标 " + escapeHTML(item.result.targetDisplay),
-      '</span></div><span class="operation-attention-gap">',
-      escapeHTML(item.result.gapLabel),
-      "</span></div>"
-    ].join("")).join("");
   }
 
   function renderCategoryTabs() {
@@ -1001,27 +899,55 @@
     }).join("");
   }
 
+  function hasActiveMetricFilters() {
+    return Boolean(metricKeyword.trim() || activeMetricStatus !== "all");
+  }
+
+  function renderMetricQueryState(resultCount) {
+    const searchInput = $("operationMetricSearch");
+    const statusFilter = $("operationMetricStatusFilter");
+    if (searchInput.value !== metricKeyword) searchInput.value = metricKeyword;
+    if (statusFilter.value !== activeMetricStatus) statusFilter.value = activeMetricStatus;
+    $("operationMetricResultCount").textContent = "筛选结果 " + resultCount + " 项";
+    $("operationMetricClear").classList.toggle("hidden", !hasActiveMetricFilters());
+  }
+
+  function clearMetricFilters(focusSearch) {
+    metricKeyword = "";
+    activeMetricStatus = "all";
+    renderMetrics();
+    if (focusSearch) $("operationMetricSearch").focus();
+  }
+
   function renderMetrics() {
     const context = getEntityContext();
-    const filteredMetrics = getFilteredMetrics();
+    const filteredResults = getFilteredMetricResults(context);
     const scopeName = activeLevel === "department" ? "部门" : activeLevel === "group" ? "业务组" : "个人";
     $("operationMetricTitle").textContent = scopeName + "运营指标";
     $("operationMetricDescription").textContent =
       getBusinessTypeLabel() + "业务 · " + getCategoryLabel(activeCategory) + " · 本期实际对比周期目标或控制阈值";
+    renderMetricQueryState(filteredResults.length);
 
-    if (!filteredMetrics.length) {
+    if (!filteredResults.length) {
+      const filteredEmpty = hasActiveMetricFilters();
       $("operationMetricGrid").innerHTML = [
-        '<div class="operation-metric-empty"><strong>当前分类暂无指标</strong>',
-        "<span>请切换业务类型或指标分类查看其他运营数据</span></div>"
+        '<div class="operation-metric-empty"><strong>',
+        filteredEmpty ? "未找到符合当前条件的运营指标" : "当前分类暂无指标",
+        "</strong><span>",
+        filteredEmpty ? "请调整指标名称或状态筛选条件" : "请切换业务类型或指标分类查看其他运营数据",
+        "</span>",
+        filteredEmpty
+          ? '<button type="button" data-clear-metric-filters><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M8 11v6M12 11v6M16 11v6M6 7l1 14h10l1-14"/></svg><span>清空筛选</span></button>'
+          : "",
+        "</div>"
       ].join("");
       return;
     }
 
-    $("operationMetricGrid").innerHTML = filteredMetrics.map((metricItem) => {
-      const result = getMetricResult(metricItem, context);
+    $("operationMetricGrid").innerHTML = filteredResults.map(({ metricItem, result }) => {
       return [
         '<article class="operation-metric-card ',
-        result.normal ? "normal" : "risk",
+        result.targetStatus,
         '">',
         '<div class="operation-metric-card-head"><div class="operation-metric-name"><span>',
         escapeHTML(getCategoryLabel(metricItem.category)),
@@ -1030,9 +956,9 @@
         '">',
         escapeHTML(metricItem.name),
         '</strong></div><span class="status-tag ',
-        result.normal ? "normal" : "risk",
+        result.targetStatus,
         '">',
-        result.normal ? "正常" : "未达标",
+        getTargetStatusLabel(result.targetStatus),
         "</span></div>",
         '<div class="operation-metric-values"><div class="operation-metric-value"><span>本期实际</span><strong>',
         escapeHTML(result.actualDisplay),
@@ -1067,13 +993,29 @@
     renderViewContext();
     renderSummary();
     renderScopePanel();
-    renderComparison();
-    renderAttention();
     renderCategoryTabs();
     renderMetrics();
   }
 
+  function goBack() {
+    if (activeLevel === "person" && activeRoleId !== "member") {
+      activeLevel = "group";
+      activeMemberId = null;
+      renderAll();
+      return;
+    }
+
+    if (activeLevel === "group" && activeRoleId === "departmentHead") {
+      activeLevel = "department";
+      activeGroupId = null;
+      activeMemberId = null;
+      renderAll();
+    }
+  }
+
   function bindEvents() {
+    $("operationBackButton").addEventListener("click", goBack);
+
     $("operationRoleTabs").addEventListener("click", (event) => {
       const button = event.target.closest("[data-role-id]");
       if (!button || button.dataset.roleId === activeRoleId) return;
@@ -1085,7 +1027,6 @@
     $("operationBusinessTypeSelect").addEventListener("change", (event) => {
       activeBusinessType = event.target.value;
       activeCategory = "all";
-      selectedComparisonMetricId = null;
       renderAll();
       if (window.showToast) window.showToast("业务类型已切换为：" + (activeBusinessType === "all" ? "全部业务" : getBusinessTypeLabel() + "业务"));
     });
@@ -1136,17 +1077,31 @@
       renderAll();
     });
 
-    $("operationComparisonMetricSelect").addEventListener("change", (event) => {
-      selectedComparisonMetricId = event.target.value;
-      renderComparison();
-    });
-
     $("operationCategoryTabs").addEventListener("click", (event) => {
       const button = event.target.closest("[data-category-id]");
       if (!button || button.dataset.categoryId === activeCategory) return;
       activeCategory = button.dataset.categoryId;
       renderCategoryTabs();
       renderMetrics();
+    });
+
+    $("operationMetricSearch").addEventListener("input", (event) => {
+      metricKeyword = event.target.value;
+      renderMetrics();
+    });
+
+    $("operationMetricStatusFilter").addEventListener("change", (event) => {
+      activeMetricStatus = event.target.value;
+      renderMetrics();
+    });
+
+    $("operationMetricClear").addEventListener("click", () => {
+      clearMetricFilters(true);
+    });
+
+    $("operationMetricGrid").addEventListener("click", (event) => {
+      if (!event.target.closest("[data-clear-metric-filters]")) return;
+      clearMetricFilters(true);
     });
   }
 

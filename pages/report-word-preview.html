@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>月报预览</title>
+  <link rel="stylesheet" href="../assets/css/report-word-preview.css" />
+</head>
+<body>
+  <header class="document-preview-toolbar">
+    <div class="document-preview-title">
+      <span class="document-file-mark" aria-hidden="true">PDF</span>
+      <div>
+        <h1 id="wordPreviewTitle">代理业务部经营月报</h1>
+        <p>原 Word 模板转换预览 · 只读</p>
+      </div>
+    </div>
+    <div class="document-preview-actions">
+      <span class="document-preview-status" id="wordPreviewStatus"><i></i>正在加载</span>
+      <button type="button" class="document-action-button secondary" id="wordPreviewDownloadButton">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+        下载 Word
+      </button>
+      <button type="button" class="document-action-button" id="wordPreviewCloseButton">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+        关闭预览
+      </button>
+    </div>
+  </header>
+
+  <main class="document-preview-stage">
+    <div class="document-preview-loading" id="wordPreviewLoading">
+      <span class="document-preview-spinner" aria-hidden="true"></span>
+      <strong>正在加载月报预览</strong>
+      <p>PDF 文件将在当前独立页面中显示。</p>
+    </div>
+    <div class="document-preview-error" id="wordPreviewError" hidden>
+      <span class="document-preview-error-icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 17h.01"/></svg>
+      </span>
+      <strong>PDF 预览加载失败</strong>
+      <p>请检查本地 PDF 文件是否存在，或使用“下载 Word”查看原始文档。</p>
+    </div>
+    <iframe id="wordPreviewFrame" title="经营月报PDF预览" hidden></iframe>
+  </main>
+
+  <div class="document-preview-toast" id="wordPreviewToast" role="status" aria-live="polite" hidden></div>
+  <script src="../assets/js/report-word-preview.js"></script>
+</body>
+</html>

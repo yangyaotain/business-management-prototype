@@ -6,6 +6,10 @@ const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptDir, "..");
 const errors = [];
 const warnings = [];
+const standalonePages = new Set([
+  "pages/login.html",
+  "pages/report-word-preview.html",
+]);
 
 function collectFiles(dir, extension, result = []) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -54,7 +58,7 @@ function checkHTML() {
       }
     }
 
-    if (label.startsWith("pages/") && label !== "pages/login.html") {
+    if (label.startsWith("pages/") && !standalonePages.has(label)) {
       if (!source.includes('id="appMenu"')) {
         errors.push(`${label}: missing shared appMenu mount`);
       }
@@ -126,25 +130,84 @@ function checkCSS() {
 
 function checkDashboardMetrics() {
   const dashboardScript = path.join(projectRoot, "assets", "js", "dashboard.js");
+  const dashboardPage = path.join(projectRoot, "pages", "dashboard.html");
   const source = fs.readFileSync(dashboardScript, "utf8");
-  const metricBlock = source.match(/const METRICS = \[([\s\S]*?)\n  \];/);
+  const pageSource = fs.readFileSync(dashboardPage, "utf8");
+  const metricBlock = source.match(/const METRIC_SOURCE = \[([\s\S]*?)\n  \];/);
   if (!metricBlock) {
-    errors.push("assets/js/dashboard.js: METRICS array not found");
+    errors.push("assets/js/dashboard.js: METRIC_SOURCE array not found");
     return;
   }
-  const ids = [...metricBlock[1].matchAll(/^\s+id:\s+(\d+),$/gm)].map((match) => Number(match[1]));
-  const expected = Array.from({ length: 28 }, (_, index) => index + 1);
+  const metrics = metricBlock[1]
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.startsWith("["))
+    .map((line) => JSON.parse(line.replace(/,$/, "")));
+  const ids = metrics.map((metric) => metric[0]);
+  const expected = [
+    ...Array.from({ length: 45 }, (_, index) => index + 1),
+    ...Array.from({ length: 13 }, (_, index) => index + 47)
+  ];
   if (JSON.stringify(ids) !== JSON.stringify(expected)) {
-    errors.push(`assets/js/dashboard.js: expected metric ids 1-28, got ${ids.join(",")}`);
+    errors.push(`assets/js/dashboard.js: expected 58 source ids with source id 46 absent, got ${ids.join(",")}`);
   }
 
   const directions = {
-    客户赋能: [...metricBlock[1].matchAll(/direction: "客户赋能"/g)].length,
-    运营效能: [...metricBlock[1].matchAll(/direction: "运营效能"/g)].length,
-    能力建设: [...metricBlock[1].matchAll(/direction: "能力建设"/g)].length
+    客户赋能: metrics.filter((metric) => metric[1] === "客户赋能").length,
+    运营效能: metrics.filter((metric) => metric[1] === "运营效能").length,
+    能力建设: metrics.filter((metric) => metric[1] === "能力建设").length
   };
-  if (directions.客户赋能 !== 9 || directions.运营效能 !== 14 || directions.能力建设 !== 5) {
+  if (directions.客户赋能 !== 27 || directions.运营效能 !== 26 || directions.能力建设 !== 5) {
     errors.push(`assets/js/dashboard.js: unexpected direction counts ${JSON.stringify(directions)}`);
+  }
+  const periods = {
+    月度: metrics.filter((metric) => metric[6] === "月度").length,
+    季度: metrics.filter((metric) => metric[6] === "季度").length
+  };
+  if (periods.月度 !== 52 || periods.季度 !== 6) {
+    errors.push(`assets/js/dashboard.js: unexpected period counts ${JSON.stringify(periods)}`);
+  }
+
+  const roleRules = [
+    ["项目经理", ["项目经理", "全员"], 48],
+    ["业务组长", ["组长", "全员"], 22],
+    ["质量审核", ["质量管理岗", "质量审核岗", "全员"], 17]
+  ];
+  for (const [label, tokens, expectedCount] of roleRules) {
+    const count = metrics.filter((metric) => tokens.some((token) => metric[7].includes(token))).length;
+    if (count !== expectedCount) {
+      errors.push(`assets/js/dashboard.js: ${label} expected ${expectedCount} metrics, got ${count}`);
+    }
+  }
+
+  const demoBlock = source.match(/const DEMO_VALUES = \{([\s\S]*?)\n  \};/);
+  const demoIds = demoBlock
+    ? [...demoBlock[1].matchAll(/^\s+(\d+):\s+\[/gm)].map((match) => Number(match[1]))
+    : [];
+  if (JSON.stringify(demoIds) !== JSON.stringify(expected)) {
+    errors.push("assets/js/dashboard.js: demo values do not cover all 58 source metrics");
+  }
+
+  for (const marker of [
+    "const PAGE_SIZE = 9",
+    'id: "projectManager"',
+    'id: "qualityAudit"',
+    "function renderMetricFilterControls(",
+    "function renderPagination(",
+    "function resetMetricFilters(",
+    'id="metricNameQuery"',
+    'id="metricStatusFilter"',
+    'id="metricFilterReset"',
+    'id="metricFilterResultCount"',
+    'id="metricPagination"',
+    "58项业务交付指标"
+  ]) {
+    const targetSource = marker.startsWith('id="') || marker.includes("58项")
+      ? pageSource
+      : source;
+    if (!targetSource.includes(marker)) {
+      errors.push(`dashboard update: required marker missing ${marker}`);
+    }
   }
 }
 
@@ -155,7 +218,8 @@ function checkUnifiedDashboardControls() {
       script: "dashboard.js",
       roleTabs: 'id="roleViewTabs"',
       periodTabs: 'id="periodTypeTabs"',
-      periodSelect: 'id="periodValueSelect"'
+      periodSelect: 'id="periodValueSelect"',
+      roles: ['label: "项目经理"', 'label: "业务组长"', 'label: "质量审核"', 'label: "部门负责人"']
     },
     {
       page: "efficiency-dashboard",
@@ -213,7 +277,9 @@ function checkUnifiedDashboardControls() {
         errors.push(`pages/${dashboard.page}.html: unified dashboard control missing ${marker}`);
       }
     }
-    for (const marker of ['label: "部门负责人"', 'label: "业务组长"', 'label: "组员"']) {
+    const roleMarkers = dashboard.roles ||
+      ['label: "部门负责人"', 'label: "业务组长"', 'label: "组员"'];
+    for (const marker of roleMarkers) {
       if (!scriptSource.includes(marker)) {
         errors.push(`assets/js/${dashboard.script}: unified demo role missing ${marker}`);
       }
@@ -259,6 +325,7 @@ function checkSpecialManagement() {
 
   const listSource = fs.readFileSync(listPath, "utf8");
   const resultsSource = fs.readFileSync(resultsPath, "utf8");
+  const cssSource = fs.readFileSync(cssPath, "utf8");
   const scriptSource = fs.readFileSync(scriptPath, "utf8");
   const requiredListMarkers = [
     'data-page="special-list"',
@@ -266,10 +333,16 @@ function checkSpecialManagement() {
     'id="specialDirectionFilter"',
     'id="specialStatusFilter"',
     'id="specialHealthFilter"',
+    'id="specialWorkTabs"',
     'id="specialListBody"',
+    'id="specialListPagination"',
     'id="specialDetailDrawer"',
     'id="specialEditDrawer"',
     'id="specialProgressModal"',
+    'id="specialProgressNodeStatus"',
+    'id="specialUploadControl"',
+    'id="specialProgressAttachmentTrigger"',
+    'id="specialProgressAttachmentName"',
     'id="specialStatusModal"',
     "../assets/js/special-management.js"
   ];
@@ -288,6 +361,7 @@ function checkSpecialManagement() {
     'id="specialResultSummary"',
     'id="specialCompletionChart"',
     'id="specialResultTableBody"',
+    'id="specialResultPagination"',
     'id="specialDetailDrawer"',
     "../assets/js/special-management.js"
   ];
@@ -318,14 +392,86 @@ function checkSpecialManagement() {
     'name: "检查协同（审计、巡视等）"',
     "function renderList(",
     "function renderResults(",
+    "COMPLETION_TREND_SAMPLE",
+    "function detailStatusStat(",
     "function renderDetailBody(",
     "function openEdit(",
     "function openProgress(",
-    "function handleApproval("
+    "function handleProgressSubmit(",
+    "function renderPagination(",
+    "function buildReminderContent(",
+    "function getWorkState(",
+    "function renderWorkTabs(",
+    "window.SpecialManagement",
+    "data-progress-node"
   ];
   for (const marker of requiredScriptMarkers) {
     if (!scriptSource.includes(marker)) {
       errors.push(`assets/js/special-management.js: required marker missing ${marker}`);
+    }
+  }
+
+  const retiredApprovalMarkers = [
+    "审批记录",
+    "提交审批",
+    "待审批",
+    "审批通过",
+    "handleApproval(",
+    "data-approval-action",
+    "statusRequests"
+  ];
+  const specialSources = [listSource, resultsSource, scriptSource].join("\n");
+  for (const marker of retiredApprovalMarkers) {
+    if (specialSources.includes(marker)) {
+      errors.push(`special management: retired approval marker remains ${marker}`);
+    }
+  }
+  const retiredReminderMarkers = [
+    "specialReminderSummary",
+    "specialReminderList",
+    "specialReminderToggle",
+    "renderReminderPanel(",
+    "data-reminder-detail",
+    "待提醒"
+  ];
+  for (const marker of retiredReminderMarkers) {
+    if (specialSources.includes(marker)) {
+      errors.push(`special management: retired page reminder marker remains ${marker}`);
+    }
+  }
+  for (const marker of [".special-work-tabs", ".special-work-tab", ".special-work-state"]) {
+    if (!cssSource.includes(marker)) {
+      errors.push(`assets/css/special-management.css: required marker missing ${marker}`);
+    }
+  }
+}
+
+function checkMessageCenter() {
+  const scriptPath = path.join(projectRoot, "assets", "js", "common.js");
+  const cssPath = path.join(projectRoot, "assets", "css", "layout.css");
+  if (!fs.existsSync(scriptPath) || !fs.existsSync(cssPath)) {
+    errors.push("message center: shared script or layout stylesheet missing");
+    return;
+  }
+  const scriptSource = fs.readFileSync(scriptPath, "utf8");
+  const cssSource = fs.readFileSync(cssPath, "utf8");
+  const scriptMarkers = [
+    "MESSAGE_STORAGE_KEY",
+    "DEFAULT_MESSAGES",
+    "messageCenterTrigger",
+    "messageCenterDrawer",
+    "function setupMessageCenter(",
+    "function markNodeHandled(",
+    "window.BusinessMessageCenter"
+  ];
+  for (const marker of scriptMarkers) {
+    if (!scriptSource.includes(marker)) {
+      errors.push(`assets/js/common.js: message center marker missing ${marker}`);
+    }
+  }
+  for (const marker of [".topbar-message-trigger", ".message-center-drawer", ".message-center-card"]) {
+    if (!cssSource.includes(marker)) {
+      errors.push(`assets/css/layout.css: message center marker missing ${marker}`);
     }
   }
 }
@@ -342,16 +488,18 @@ function checkOperationDashboard() {
   if (![htmlPath, cssPath, scriptPath].every((file) => fs.existsSync(file))) return;
 
   const htmlSource = fs.readFileSync(htmlPath, "utf8");
+  const cssSource = fs.readFileSync(cssPath, "utf8");
   const scriptSource = fs.readFileSync(scriptPath, "utf8");
   const requiredHtmlMarkers = [
     'data-page="operation-dashboard"',
+    'id="operationBackButton"',
     'id="operationRoleTabs"',
     'id="operationPeriodTypeTabs"',
     'id="operationPeriodSelect"',
     'id="operationBusinessTypeSelect"',
     'id="operationScopePath"',
     'id="operationScopePanelBody"',
-    'id="operationComparisonBody"',
+    "业务组运营概览",
     'id="operationMetricGrid"',
     "../assets/js/operation-dashboard.js"
   ];
@@ -373,13 +521,41 @@ function checkOperationDashboard() {
     'metric("tenderCount", "招标数量"',
     'metric("revenue", "营收"',
     'metric("feeRecovery", "平台服务费回收率"',
+    "renderPageActions()",
+    "function goBack()",
     "renderGroupPanel()",
     "renderMemberPanel()",
-    "renderPersonPanel()"
+    "renderPersonPanel()",
+    "function getOverviewMetrics(",
+    "function renderOverviewMetricValue(",
+    '"tenderCount"',
+    '"abnormalCount"'
   ];
   for (const marker of requiredScriptMarkers) {
     if (!scriptSource.includes(marker)) {
       errors.push(`assets/js/operation-dashboard.js: required marker missing ${marker}`);
+    }
+  }
+
+  for (const marker of [".operation-group-name-button", ".operation-table-metric-value"]) {
+    if (!cssSource.includes(marker)) {
+      errors.push(`assets/css/operation-dashboard.css: required marker missing ${marker}`);
+    }
+  }
+
+  const retiredOperationAnalysisMarkers = [
+    'id="operationComparisonBody"',
+    'id="operationAttentionList"',
+    "selectedComparisonMetricId",
+    "function renderComparison(",
+    "function renderAttention(",
+    ".operation-analysis-grid",
+    ".operation-group-card"
+  ];
+  const operationSources = [htmlSource, cssSource, scriptSource].join("\n");
+  for (const marker of retiredOperationAnalysisMarkers) {
+    if (operationSources.includes(marker)) {
+      errors.push(`operation dashboard: retired analysis marker remains ${marker}`);
     }
   }
 }
@@ -448,14 +624,16 @@ function checkCustomerEvaluationPage() {
   const scriptSource = fs.readFileSync(scriptPath, "utf8");
   const requiredHtmlMarkers = [
     'data-page="customer-evaluation"',
+    'id="ceBreadcrumb"',
+    'id="cePageTitle"',
+    'id="cePageActions"',
     'id="ceRoleTabs"',
-    'id="ceFilterForm"',
+    'id="ceRoleHint"',
     'id="cePeriodTypeTabs"',
     'id="cePeriodValueSelect"',
-    'id="ceSummaryCards"',
-    'id="ceRatingDistribution"',
-    'id="ceProblemAnalysis"',
-    'id="ceDetailRows"',
+    'id="ceBusinessFilter"',
+    'id="ceRatingFilter"',
+    'id="ceContent"',
     'id="ceDetailDrawer"',
     "../assets/js/customer-evaluation.js"
   ];
@@ -469,22 +647,47 @@ function checkCustomerEvaluationPage() {
   }
 
   const requiredScriptMarkers = [
+    'id: "departmentHead"',
+    'id: "groupLeader"',
+    'id: "member"',
+    'defaultView: "person"',
+    'view: "department"',
     'name: "优秀"',
     'name: "良好"',
     'name: "一般"',
     'name: "低分"',
     "const PERIOD_OPTIONS",
-    'let activePeriodType = "月度"',
+    'data-page-action="back"',
+    'data-group-id="',
+    'data-person-id="',
     "renderSummary(records)",
-    "renderTrend(records)",
-    "renderRatingDistribution(records)",
-    "renderProblemAnalysis(records)",
-    "renderGroupComparison(records)",
-    "renderTable(records)"
+    "renderAnalysis(records)",
+    "renderDetailPanel(records)",
+    "function renderGroupOverview(",
+    "function renderMemberOverview(",
+    "function switchRole(",
+    "function openGroup(",
+    "function openPerson(",
+    "function goBack(",
+    "function navigateToLevel("
   ];
   for (const marker of requiredScriptMarkers) {
     if (!scriptSource.includes(marker)) {
       errors.push(`assets/js/customer-evaluation.js: required marker missing ${marker}`);
+    }
+  }
+
+  const retiredScopeMarkers = [
+    "ceFilterForm",
+    "ceGroupFilter",
+    "ceManagerFilter",
+    "renderGroupComparison(",
+    "业务组评价对比"
+  ];
+  const customerSources = [htmlSource, scriptSource].join("\n");
+  for (const marker of retiredScopeMarkers) {
+    if (customerSources.includes(marker)) {
+      errors.push(`customer evaluation: retired scope marker remains ${marker}`);
     }
   }
 }
@@ -504,16 +707,23 @@ function checkPerformanceDashboard() {
   const scriptSource = fs.readFileSync(scriptPath, "utf8");
   const requiredHtmlMarkers = [
     'data-page="performance-dashboard"',
+    'id="performanceBreadcrumb"',
+    'id="performanceBackButton"',
     'id="performanceRoleTabs"',
+    'id="performanceRoleHint"',
     'id="performancePeriodTypeTabs"',
     'id="performancePeriodSelect"',
     'id="performanceGroupSelect"',
     'id="performanceSummary"',
+    'id="performanceScopePanel"',
     'id="performanceGroupComparison"',
     'id="performanceExceptionList"',
     'id="performanceTableBody"',
+    'id="performancePagination"',
     'id="performanceDetailDrawer"',
     'id="performanceConfigDrawer"',
+    'id="configMember"',
+    '<option value="person">个人</option>',
     "../assets/js/performance-dashboard.js"
   ];
   for (const marker of requiredHtmlMarkers) {
@@ -529,8 +739,12 @@ function checkPerformanceDashboard() {
     'id: "departmentHead"',
     'id: "groupLeader"',
     'id: "member"',
+    'defaultLevel: "person"',
+    'memberId: "member-2-1"',
+    "const PAGE_SIZE = 6",
     "const PERIOD_OPTIONS",
     'let activePeriodType = "月度"',
+    "let currentPage = 1",
     '"purchaseSuccess",\n      "采购成功率"',
     '"customerSatisfaction",\n      "客户满意度"',
     '"perCapitaOutput",\n      "人均产值"',
@@ -540,10 +754,23 @@ function checkPerformanceDashboard() {
     'function getAchievement(',
     'function getGapInfo(',
     'function renderGroupComparison(',
+    'function renderGroupMembers(',
+    'function renderPersonContext(',
     'function renderExceptions(',
+    'function renderPagination(',
     'function renderTable(',
+    'function getTrendAbnormalValue(',
+    '"performance-trend-explanation"',
+    "earlyAbnormalCount",
     'function openDetail(',
-    'function openConfig('
+    'function canConfigureItem(',
+    'function canConfigureScope(',
+    'function openConfig(',
+    'function renderConfigMemberOptions(',
+    'function openGroup(',
+    'function openMember(',
+    'function navigateToLevel(',
+    '"组员同指标对比"'
   ];
   for (const marker of requiredScriptMarkers) {
     if (!scriptSource.includes(marker)) {
@@ -628,11 +855,17 @@ function checkSystemManagementPages() {
 }
 
 function checkMaterials() {
-  const sourceWorkbook = path.join(projectRoot, "materials", "业务管理系统需求梳理-yy.xlsx");
-  if (!fs.existsSync(sourceWorkbook)) {
-    errors.push("materials/业务管理系统需求梳理-yy.xlsx: source workbook missing");
-  } else if (fs.statSync(sourceWorkbook).size === 0) {
-    errors.push("materials/业务管理系统需求梳理-yy.xlsx: source workbook is empty");
+  const sourceWorkbooks = [
+    "业务管理系统需求梳理-yy.xlsx",
+    "业务管理系统需求梳理-20260728.xlsx"
+  ];
+  for (const workbookName of sourceWorkbooks) {
+    const sourceWorkbook = path.join(projectRoot, "materials", workbookName);
+    if (!fs.existsSync(sourceWorkbook)) {
+      errors.push(`materials/${workbookName}: source workbook missing`);
+    } else if (fs.statSync(sourceWorkbook).size === 0) {
+      errors.push(`materials/${workbookName}: source workbook is empty`);
+    }
   }
 }
 
@@ -642,6 +875,7 @@ checkDashboardMetrics();
 checkUnifiedDashboardControls();
 checkPlaceholderPages();
 checkSpecialManagement();
+checkMessageCenter();
 checkOperationDashboard();
 checkEfficiencyDashboard();
 checkCustomerEvaluationPage();
@@ -651,6 +885,17 @@ checkMaterials();
 
 if (!fs.existsSync(path.join(projectRoot, "docs", "需求与原型框架梳理.md"))) {
   errors.push("docs/需求与原型框架梳理.md: analysis record missing");
+}
+const dashboardUpdateDoc = path.join(projectRoot, "docs", "工作台业务交付指标更新分析与设计.md");
+if (!fs.existsSync(dashboardUpdateDoc)) {
+  errors.push("docs/工作台业务交付指标更新分析与设计.md: update record missing");
+} else {
+  const dashboardUpdateSource = fs.readFileSync(dashboardUpdateDoc, "utf8");
+  for (const marker of ["## 6. 实施结果", "采用最新 58 项指标", "指标卡每页 9 项"]) {
+    if (!dashboardUpdateSource.includes(marker)) {
+      errors.push(`docs/工作台业务交付指标更新分析与设计.md: marker missing ${marker}`);
+    }
+  }
 }
 
 if (warnings.length) {
@@ -664,4 +909,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log(`Static validation passed: ${htmlCount} HTML files, ${cssCount} CSS files, 28 metrics, 1 efficiency dashboard, 1 operation dashboard, 1 customer evaluation analysis, 1 performance dashboard, 1 special management module, 1 placeholder page, 3 system pages.`);
+console.log(`Static validation passed: ${htmlCount} HTML files, ${cssCount} CSS files, 58 metrics, 4 workbench roles, metric name/status filters, 9-card pagination, 1 efficiency dashboard, 1 operation dashboard, 1 customer evaluation analysis, 1 performance dashboard, 1 special management module, 1 shared message center, 1 placeholder page, 3 system pages.`);

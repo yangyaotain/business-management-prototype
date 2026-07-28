@@ -28,7 +28,7 @@
 .dashboard-control-copy p {
   margin: 5px 0 0;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--font-size-secondary);
   line-height: 1.5;
 }
 
@@ -61,7 +61,7 @@
   background: #f8fafc;
   border: 1px solid transparent;
   border-radius: 9px;
-  font-size: 11px;
+  font-size: var(--font-size-secondary);
   font-weight: 700;
   white-space: nowrap;
   transition:
@@ -176,6 +176,153 @@
   color: #98a2b3;
   background: #f8fafc;
   cursor: not-allowed;
+}
+
+.dashboard-organization-panel {
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+
+.dashboard-organization-count.dashboard-organization-count {
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 9px;
+  color: var(--primary);
+  background: var(--primary-soft);
+  border: 0;
+  border-radius: 999px;
+  font-size: var(--font-size-secondary);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.dashboard-organization-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.dashboard-organization-table.dashboard-organization-table {
+  width: 100%;
+  min-width: 960px;
+  border-collapse: collapse;
+  border-spacing: 0;
+  table-layout: fixed;
+}
+
+.dashboard-organization-table.dashboard-organization-table th,
+.dashboard-organization-table.dashboard-organization-table td {
+  height: 48px;
+  padding: 0 12px;
+  color: #344054;
+  background: #fff;
+  border-bottom: 1px solid var(--line);
+  font-size: var(--font-size-body);
+  line-height: 1.4;
+  text-align: right;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.dashboard-organization-table.dashboard-organization-table th {
+  height: 42px;
+  color: #667085;
+  background: #f8fafc;
+  font-size: var(--font-size-secondary);
+  font-weight: 800;
+}
+
+.dashboard-organization-table.dashboard-organization-table th:first-child,
+.dashboard-organization-table.dashboard-organization-table th:nth-child(2),
+.dashboard-organization-table.dashboard-organization-table td:first-child,
+.dashboard-organization-table.dashboard-organization-table td:nth-child(2) {
+  text-align: left;
+}
+
+.dashboard-organization-table.dashboard-organization-table .dashboard-organization-text {
+  text-align: left;
+}
+
+.dashboard-organization-table.dashboard-organization-table .people-cell,
+.dashboard-organization-table.dashboard-organization-table .operation-table-center {
+  text-align: center;
+}
+
+.dashboard-organization-table.dashboard-organization-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.dashboard-organization-table.dashboard-organization-table tbody tr:hover td {
+  background: var(--primary-hover-bg);
+}
+
+.dashboard-organization-link.dashboard-organization-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 100%;
+  padding: 0;
+  color: var(--primary);
+  background: transparent;
+  border: 0;
+  font-size: var(--font-size-body);
+  font-weight: 800;
+  line-height: 1.4;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.dashboard-organization-link.dashboard-organization-link:hover {
+  color: #095fc7;
+  text-decoration: none;
+}
+
+.dashboard-organization-link.dashboard-organization-link svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.16s ease;
+}
+
+.dashboard-organization-link.dashboard-organization-link:hover svg {
+  transform: translateX(2px);
+}
+
+.dashboard-organization-table .efficiency-table-value {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.dashboard-organization-table .efficiency-table-value strong,
+.dashboard-organization-table .efficiency-table-value span {
+  display: inline;
+  margin: 0;
+}
+
+.dashboard-organization-table .efficiency-table-value strong,
+.dashboard-organization-table .ce-table-number,
+.dashboard-organization-table .operation-table-metric-value,
+.dashboard-organization-table .operation-table-score {
+  color: var(--heading);
+  font-size: var(--font-size-body);
+  font-variant-numeric: tabular-nums;
+}
+
+.dashboard-organization-table .efficiency-table-value span,
+.dashboard-organization-table .ce-table-unit {
+  font-size: var(--font-size-caption);
+}
+
+.dashboard-organization-table.operation-group-overview-table {
+  min-width: 1040px;
 }
 
 @media (max-width: 1180px) {

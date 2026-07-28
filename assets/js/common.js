@@ -1,5 +1,6 @@
 (function setupCommonUI() {
   const PROFILE_STORAGE_KEY = "business-management-user-profile";
+  const MESSAGE_STORAGE_KEY = "business-management-message-state";
   const DEFAULT_PROFILE = {
     avatar: "张",
     name: "张明",
@@ -9,6 +10,65 @@
     email: "zhangming@company.com",
     phone: "138 0000 6288"
   };
+  const DEFAULT_MESSAGES = [
+    {
+      id: "special-sp006-n2",
+      specialId: "sp-006",
+      nodeId: "sp006-n2",
+      status: "overdue",
+      read: false,
+      handled: false,
+      title: "专项节点已逾期",
+      specialName: "质量复盘（审计整改项）",
+      nodeName: "完成上半年质量复盘",
+      content: "该节点已超过完成期限，请尽快补充当前进展、后续计划并更新节点状态。",
+      dueDate: "2026-07-15",
+      createdAt: "2026-07-16 09:00"
+    },
+    {
+      id: "special-sp008-n2",
+      specialId: "sp-008",
+      nodeId: "sp008-n2",
+      status: "overdue",
+      read: false,
+      handled: false,
+      title: "专项节点已逾期",
+      specialName: "政策分析研究",
+      nodeName: "完成重点政策解读",
+      content: "该节点尚未完成，已由待处理升级为逾期提醒，请及时完成政策解读并反馈进展。",
+      dueDate: "2026-06-30",
+      createdAt: "2026-07-01 09:00"
+    },
+    {
+      id: "special-sp001-n3",
+      specialId: "sp-001",
+      nodeId: "sp001-n3",
+      status: "action",
+      read: false,
+      handled: false,
+      title: "专项节点待处理",
+      specialName: "客户培训",
+      nodeName: "形成重点主题课程包",
+      content: "节点已到提醒时间，请按计划完善课程包，并及时填报当前完成情况。",
+      dueDate: "2026-09-30",
+      createdAt: "2026-07-25 09:00"
+    },
+    {
+      id: "special-sp004-n4",
+      specialId: "sp-004",
+      nodeId: "sp004-n4",
+      status: "handled",
+      read: true,
+      handled: true,
+      title: "专项节点已处理",
+      specialName: "业务培训（审计整改项）",
+      nodeName: "完成课程计划总结",
+      content: "节点进展已填报并完成归档，相关提醒已自动转为已处理。",
+      dueDate: "2026-06-30",
+      createdAt: "2026-06-28 17:30"
+    }
+  ];
+  let messageCenterMessages = [];
 
   const ICONS = {
     profile:
@@ -22,7 +82,13 @@
     save:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h12l2 2v16H5z"/><path d="M8 3v6h8V3M8 21v-7h8v7"/></svg>',
     check:
-      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>'
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>',
+    bell:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>',
+    view:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.5"/></svg>',
+    progress:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M11 20V4M17 20v-7M22 20H2"/></svg>'
   };
 
   function escapeHTML(value) {
@@ -48,6 +114,41 @@
   function saveProfile(profile) {
     try {
       localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
+    } catch (error) {}
+  }
+
+  function loadMessages() {
+    let savedState = {};
+    try {
+      savedState = JSON.parse(localStorage.getItem(MESSAGE_STORAGE_KEY) || "{}");
+    } catch (error) {}
+    return DEFAULT_MESSAGES.map((message) => {
+      const state = savedState[message.id] || {};
+      const handled = Boolean(state.handled || message.handled);
+      return {
+        ...message,
+        read: handled || state.read === true || message.read,
+        handled,
+        status: handled ? "handled" : message.status,
+        title: handled ? "专项节点已处理" : message.title,
+        content: handled && !message.handled
+          ? "节点进展已填报，相关提醒已自动转为已处理。"
+          : message.content
+      };
+    });
+  }
+
+  function saveMessages(messages) {
+    const state = {};
+    messages.forEach((message) => {
+      state[message.id] = {
+        read: Boolean(message.read),
+        handled: Boolean(message.handled),
+        status: message.status
+      };
+    });
+    try {
+      localStorage.setItem(MESSAGE_STORAGE_KEY, JSON.stringify(state));
     } catch (error) {}
   }
 
@@ -164,6 +265,235 @@
       trigger.classList.remove("is-open");
       trigger.setAttribute("aria-expanded", "false");
     }
+  }
+
+  function getMessageStatusMeta(status) {
+    const map = {
+      action: { label: "待处理", className: "action" },
+      overdue: { label: "已逾期", className: "overdue" },
+      handled: { label: "已处理", className: "handled" }
+    };
+    return map[status] || map.action;
+  }
+
+  function ensureMessageCenter() {
+    let root = document.getElementById("messageCenterRoot");
+    if (root) return root;
+    root = document.createElement("div");
+    root.id = "messageCenterRoot";
+    root.innerHTML = [
+      '<div class="drawer-mask hidden" id="messageCenterMask" data-message-action="close"></div>',
+      '<aside class="drawer message-center-drawer hidden" id="messageCenterDrawer" role="dialog" aria-modal="true" aria-labelledby="messageCenterTitle">',
+      '<div class="drawer-head message-center-head"><div class="message-center-title">',
+      '<span class="message-center-title-icon">',
+      ICONS.bell,
+      '</span><div><h2 id="messageCenterTitle">站内消息</h2><p>专项节点提醒与待处理事项</p></div></div>',
+      '<div class="message-center-head-actions">',
+      '<button type="button" class="message-center-mark-all" data-message-action="mark-all">',
+      ICONS.check,
+      '全部已读</button>',
+      '<button type="button" class="modal-close" data-message-action="close" aria-label="关闭">',
+      ICONS.close,
+      "</button></div></div>",
+      '<div class="drawer-body message-center-list" id="messageCenterList"></div>',
+      "</aside>"
+    ].join("");
+    document.body.appendChild(root);
+    return root;
+  }
+
+  function renderMessageCenter() {
+    const list = document.getElementById("messageCenterList");
+    const badge = document.getElementById("messageUnreadBadge");
+    const unreadCount = messageCenterMessages.filter((message) => !message.read && !message.handled).length;
+    if (badge) {
+      badge.textContent = unreadCount > 99 ? "99+" : String(unreadCount);
+      badge.classList.toggle("hidden", unreadCount === 0);
+    }
+    if (!list) return;
+    const priority = { overdue: 0, action: 1, handled: 2 };
+    const messages = [...messageCenterMessages].sort((left, right) => (
+      Number(left.read) - Number(right.read) ||
+      (priority[left.status] || 0) - (priority[right.status] || 0) ||
+      right.createdAt.localeCompare(left.createdAt)
+    ));
+    if (!messages.length) {
+      list.innerHTML = [
+        '<div class="message-center-empty">',
+        ICONS.check,
+        "<strong>暂无站内消息</strong><span>新的节点提醒会在这里集中展示。</span></div>"
+      ].join("");
+      return;
+    }
+    list.innerHTML = messages.map((message) => {
+      const status = getMessageStatusMeta(message.status);
+      return [
+        '<article class="message-center-card ',
+        status.className,
+        message.read ? "" : " unread",
+        '" data-message-id="',
+        escapeHTML(message.id),
+        '"><div class="message-center-card-head"><div><span class="message-center-status ',
+        status.className,
+        '">',
+        escapeHTML(status.label),
+        "</span><time>",
+        escapeHTML(message.createdAt),
+        "</time></div>",
+        message.read
+          ? ""
+          : '<button type="button" class="message-center-read" data-message-action="read" data-message-id="' +
+            escapeHTML(message.id) + '" aria-label="标为已读">' + ICONS.check + "</button>",
+        "</div><h3>",
+        escapeHTML(message.title),
+        "</h3><p>",
+        escapeHTML(message.content),
+        '</p><div class="message-center-meta"><strong>',
+        escapeHTML(message.specialName),
+        "</strong><span>",
+        escapeHTML(message.nodeName),
+        "</span><span>完成期限 ",
+        escapeHTML(message.dueDate),
+        "</span></div>",
+        '<div class="message-center-actions">',
+        '<button type="button" class="message-center-action" data-message-action="view" data-message-id="',
+        escapeHTML(message.id),
+        '">',
+        ICONS.view,
+        "查看节点</button>",
+        message.handled
+          ? ""
+          : '<button type="button" class="message-center-action primary" data-message-action="handle" data-message-id="' +
+            escapeHTML(message.id) + '">' + ICONS.progress + "立即处理</button>",
+        "</div></article>"
+      ].join("");
+    }).join("");
+  }
+
+  function closeMessageCenter() {
+    const mask = document.getElementById("messageCenterMask");
+    const drawer = document.getElementById("messageCenterDrawer");
+    const trigger = document.getElementById("messageCenterTrigger");
+    if (mask) mask.classList.add("hidden");
+    if (drawer) drawer.classList.add("hidden");
+    if (trigger) {
+      trigger.classList.remove("is-open");
+      trigger.setAttribute("aria-expanded", "false");
+    }
+    document.body.classList.remove("has-message-center");
+  }
+
+  function openMessageCenter() {
+    ensureMessageCenter();
+    closeUserMenu();
+    renderMessageCenter();
+    document.getElementById("messageCenterMask").classList.remove("hidden");
+    document.getElementById("messageCenterDrawer").classList.remove("hidden");
+    const trigger = document.getElementById("messageCenterTrigger");
+    trigger.classList.add("is-open");
+    trigger.setAttribute("aria-expanded", "true");
+    document.body.classList.add("has-message-center");
+  }
+
+  function updateMessageState(messageId, updates) {
+    const message = messageCenterMessages.find((item) => item.id === messageId);
+    if (!message) return null;
+    Object.assign(message, updates);
+    saveMessages(messageCenterMessages);
+    renderMessageCenter();
+    return message;
+  }
+
+  function openMessageTarget(message, action) {
+    if (!message) return;
+    updateMessageState(message.id, { read: true });
+    closeMessageCenter();
+    if (document.body.dataset.page === "special-list" && window.SpecialManagement) {
+      if (action === "handle") {
+        window.SpecialManagement.openProgress(message.specialId, message.nodeId);
+      } else {
+        window.SpecialManagement.openNode(message.specialId, message.nodeId);
+      }
+      return;
+    }
+    const targetAction = action === "handle" ? "progress" : "detail";
+    window.location.href = "special-list.html?special=" +
+      encodeURIComponent(message.specialId) + "&node=" +
+      encodeURIComponent(message.nodeId) + "&action=" + targetAction;
+  }
+
+  function markNodeHandled(nodeId) {
+    if (!messageCenterMessages.length) messageCenterMessages = loadMessages();
+    let changed = false;
+    messageCenterMessages.forEach((message) => {
+      if (message.nodeId !== nodeId) return;
+      message.read = true;
+      message.handled = true;
+      message.status = "handled";
+      message.title = "专项节点已处理";
+      message.content = "节点进展已填报，相关提醒已自动转为已处理。";
+      changed = true;
+    });
+    if (!changed) return;
+    saveMessages(messageCenterMessages);
+    renderMessageCenter();
+  }
+
+  function setupMessageCenter() {
+    const actions = document.querySelector(".topbar-actions");
+    const userTrigger = document.querySelector(".user-trigger");
+    if (!actions || !userTrigger) return;
+    messageCenterMessages = loadMessages();
+    let trigger = document.getElementById("messageCenterTrigger");
+    if (!trigger) {
+      trigger = document.createElement("button");
+      trigger.type = "button";
+      trigger.id = "messageCenterTrigger";
+      trigger.className = "topbar-message-trigger";
+      trigger.setAttribute("aria-label", "打开站内消息");
+      trigger.setAttribute("aria-expanded", "false");
+      trigger.innerHTML = ICONS.bell + '<span class="message-unread-badge hidden" id="messageUnreadBadge">0</span>';
+      actions.insertBefore(trigger, userTrigger);
+    }
+    const root = ensureMessageCenter();
+    renderMessageCenter();
+
+    trigger.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const drawer = document.getElementById("messageCenterDrawer");
+      if (drawer.classList.contains("hidden")) openMessageCenter();
+      else closeMessageCenter();
+    });
+
+    root.addEventListener("click", (event) => {
+      const actionButton = event.target.closest("[data-message-action]");
+      if (!actionButton) return;
+      const action = actionButton.dataset.messageAction;
+      if (action === "close") {
+        closeMessageCenter();
+        return;
+      }
+      if (action === "mark-all") {
+        messageCenterMessages.forEach((message) => {
+          message.read = true;
+        });
+        saveMessages(messageCenterMessages);
+        renderMessageCenter();
+        showToast("全部消息已标为已读");
+        return;
+      }
+      const message = messageCenterMessages.find((item) => item.id === actionButton.dataset.messageId);
+      if (!message) return;
+      if (action === "read") {
+        updateMessageState(message.id, { read: true });
+      } else if (action === "view" || action === "handle") {
+        openMessageTarget(message, action);
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeMessageCenter();
+    });
   }
 
   function closeUserModals() {
@@ -291,6 +621,7 @@
     trigger.addEventListener("click", (event) => {
       event.stopPropagation();
       const willOpen = menu.classList.contains("hidden");
+      if (willOpen) closeMessageCenter();
       menu.classList.toggle("hidden", !willOpen);
       trigger.classList.toggle("is-open", willOpen);
       trigger.setAttribute("aria-expanded", String(willOpen));
@@ -347,11 +678,15 @@
   function init() {
     setupSidebarToggle();
     setupUserMenu();
+    setupMessageCenter();
     setupGlobalActions();
   }
 
   window.showToast = showToast;
   window.getBusinessManagementProfile = loadProfile;
+  window.BusinessMessageCenter = {
+    markNodeHandled
+  };
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);
