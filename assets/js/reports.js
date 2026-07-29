@@ -85,14 +85,16 @@
     "热电联产工程监理采购","风电场道路维护服务采购","数字化平台升级采购","安全生产培训服务采购",
     "海上风电设备检测采购","年度后勤物业服务采购"
   ];
-  const DETAIL_PAGE_SIZE=6;
   const REPORT_TEMPLATE_PATH="../assets/files/代理业务部经营月报【2026年X月】 模板（系统版）.docx";
   const generalMetricNames=["异常数量","一次通过率","质量问题数","质量问题率","客户满意度","关键节点时效","项目完成平均周期"];
   let state={
     level:"department",groupId:null,person:null,category:"全部",role:"departmentHead",
     periodType:"月度",selectedPeriods:{月度:"2026-07",季度:"2026-Q2"},businessType:"all",openMetric:null,
-    reportKeyword:"",detailMetric:null,detailKeyword:"",detailStatus:"all",detailPage:1,detailRecords:[]
+    reportKeyword:"",detailMetric:null,detailKeyword:"",detailStatus:"all",detailRecords:[]
   };
+  let metricReportPagination=null;
+  let detailPagination=null;
+  let reportManagementPagination=null;
   const $=id=>document.getElementById(id);
   const esc=v=>String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
   const activeGroup=()=>groups.find(g=>g.id===state.groupId)||groups[1];
@@ -194,7 +196,8 @@
     const cats=["全部","业务规模","客户赋能","质量时效","能力建设"];
     $("metricCategoryTabs").innerHTML=cats.map(c=>'<button type="button" class="'+(state.category===c?"active":"")+'" data-category="'+c+'">'+c+"</button>").join("");
     const list=visibleMetrics();
-    $("metricReportBody").innerHTML=list.map(m=>{
+    const paginationState=metricReportPagination.update(list);
+    $("metricReportBody").innerHTML=paginationState.items.map(m=>{
       const open=state.openMetric===m[1],current=metricCurrentValue(m);
       return '<tr class="metric-row '+m[10]+'"><td class="sticky-name"><button class="metric-toggle '+(open?"open":"")+'" data-metric="'+m[1]+'">'+ICON+'<span>'+m[1]+'</span></button><span class="metric-name-meta">'+m[0]+' · '+scopeLabel()+'</span></td><td>'+current+'</td><td>'+m[3]+'</td><td class="mom-col '+(m[4].startsWith("-")?"change-down":"change-up")+'">'+m[4]+'</td><td>'+m[5]+'</td><td class="yoy-col '+(m[6].startsWith("-")?"change-down":"change-up")+'">'+m[6]+'</td><td>'+m[7]+'</td><td>'+m[8]+'</td><td class="progress-cell"><div class="progress-inline"><span><i style="width:'+Math.min(m[9],100)+'%"></i></span><em>'+m[9]+'%</em></div></td><td class="sticky-action"><button class="table-action" data-detail="'+m[1]+'">查看明细</button></td></tr>'+(open?'<tr class="detail-composition"><td colspan="10"><div class="composition-box">'+m[11].map(x=>{const p=x.split(" ");return '<div class="composition-item"><span>'+p[0]+'</span><strong>'+p.slice(1).join(" ")+"</strong></div>"}).join("")+"</div></td></tr>":"");
     }).join("");
@@ -411,8 +414,12 @@
       }
     }
   }
-  function modal(content,foot){$("reportOverlayRoot").innerHTML='<div class="modal-mask" data-close-overlay></div><section class="modal wide-modal" role="dialog" aria-modal="true">'+content+(foot?'<div class="modal-foot">'+foot+"</div>":"")+"</section>";document.body.style.overflow="hidden"}
-  function closeOverlay(){$("reportOverlayRoot").innerHTML="";document.body.style.overflow=""}
+  function destroyOverlayPaginators(){
+    if(detailPagination){detailPagination.destroy();detailPagination=null}
+    if(reportManagementPagination){reportManagementPagination.destroy();reportManagementPagination=null}
+  }
+  function modal(content,foot){destroyOverlayPaginators();$("reportOverlayRoot").innerHTML='<div class="modal-mask" data-close-overlay></div><section class="modal wide-modal" role="dialog" aria-modal="true">'+content+(foot?'<div class="modal-foot">'+foot+"</div>":"")+"</section>";document.body.style.overflow="hidden"}
+  function closeOverlay(){destroyOverlayPaginators();$("reportOverlayRoot").innerHTML="";document.body.style.overflow=""}
   function visibleReportRecords(){
     const role=activeRole();
     const reportScope=role.id==="departmentHead"?"全部":role.id==="groupLeader"?activeGroup().name:role.userName;
@@ -422,8 +429,7 @@
     const role=activeRole();
     return role.id==="departmentHead"?"全部":role.id==="groupLeader"?activeGroup().name:role.userName;
   }
-  function reportRowsHTML(){
-    const records=visibleReportRecords();
+  function reportRowsHTML(records){
     const reportScope=managedReportScope();
     if(!records.length)return '<tr><td colspan="6"><div class="report-management-empty"><strong>未找到匹配报告</strong><span>请调整报告名称或统计周期后重试。</span></div></td></tr>';
     return records.map(report=>[
@@ -440,8 +446,11 @@
   function renderReportManagementRows(){
     const body=$("managedReportTableBody");
     const count=$("managedReportCount");
-    if(body)body.innerHTML=reportRowsHTML();
-    if(count)count.textContent=visibleReportRecords().length+"份报告";
+    if(!body||!count||!reportManagementPagination)return;
+    const records=visibleReportRecords();
+    const paginationState=reportManagementPagination.update(records);
+    body.innerHTML=reportRowsHTML(paginationState.items);
+    count.textContent=records.length+"份报告";
   }
   function openReportManagement(){
     state.reportKeyword="";
@@ -450,9 +459,16 @@
       '<div class="modal-body report-management-body">'+
       '<div class="report-management-toolbar"><label class="report-management-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="reportManagementSearch" type="search" placeholder="搜索报告名称、周期或范围" autocomplete="off"></label><span id="managedReportCount"></span></div>'+
       '<div class="report-table-wrap"><table class="report-table managed-report-table"><thead><tr><th>报告名称</th><th>统计周期</th><th>数据范围</th><th>更新时间</th><th>更新人</th><th>操作</th></tr></thead><tbody id="managedReportTableBody"></tbody></table></div>'+
+      '<div class="app-pagination hidden" id="managedReportPagination" aria-label="报告管理分页"></div>'+
       '</div>',
       '<button class="ghost-btn" data-close-overlay><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>关闭</button>'
     );
+    reportManagementPagination=window.AppPagination.create({
+      container:$("managedReportPagination"),
+      variant:"table",
+      itemLabel:"份",
+      onChange:renderReportManagementRows
+    });
     renderReportManagementRows();
   }
   function openReportPreview(reportId){
@@ -567,14 +583,11 @@
   }
   function renderDetailResults(){
     const body=$("detailTableBody");
-    const pagination=$("detailPagination");
     const count=$("detailResultCount");
-    if(!body||!pagination||!count)return;
+    if(!body||!count||!detailPagination)return;
     const records=filteredDetailRecords();
-    const pageCount=Math.max(1,Math.ceil(records.length/DETAIL_PAGE_SIZE));
-    state.detailPage=Math.min(Math.max(1,state.detailPage),pageCount);
-    const start=(state.detailPage-1)*DETAIL_PAGE_SIZE;
-    const pageRecords=records.slice(start,start+DETAIL_PAGE_SIZE);
+    const paginationState=detailPagination.update(records);
+    const pageRecords=paginationState.items;
     count.textContent="共 "+records.length+" 条";
     body.innerHTML=pageRecords.length?pageRecords.map(record=>[
       "<tr><td><span class=\"detail-code\">",esc(record.code),"</span></td>",
@@ -583,17 +596,6 @@
       '<td><span class="detail-status-tag ',detailStatusClass(record.metricStatus),'">',esc(record.metricStatus),"</span></td>",
       "<td>",esc(record.completedAt),"</td></tr>"
     ].join("")).join(""):'<tr><td colspan="7"><div class="detail-table-empty"><strong>未找到匹配明细</strong><span>请调整查询条件后重试。</span></div></td></tr>';
-    const pageButtons=Array.from({length:pageCount},(_,index)=>{
-      const page=index+1;
-      return '<button type="button" class="detail-page-button '+(page===state.detailPage?"active":"")+'" data-detail-page="'+page+'" aria-label="第 '+page+' 页">'+page+"</button>";
-    }).join("");
-    pagination.innerHTML=[
-      '<button type="button" class="detail-page-button detail-page-nav" data-detail-page="',state.detailPage-1,'"',state.detailPage===1?" disabled":"",
-      '><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>上一页</button>',
-      pageButtons,
-      '<button type="button" class="detail-page-button detail-page-nav" data-detail-page="',state.detailPage+1,'"',state.detailPage===pageCount?" disabled":"",
-      '>下一页<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>'
-    ].join("");
   }
   async function exportDetailData(){
     if(!window.ExcelJS){
@@ -655,7 +657,6 @@
     state.detailMetric=name;
     state.detailKeyword="";
     state.detailStatus="all";
-    state.detailPage=1;
     state.detailRecords=createDetailRecords(name);
     modal([
       '<div class="drawer-head"><div><h2>',esc(name),'基础明细</h2><p>',esc(scopeLabel())," · ",esc(currentPeriodLabel()),
@@ -669,14 +670,20 @@
       '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>查询</button>',
       '<button type="button" class="ghost-btn detail-query-button" id="detailResetButton">',
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v6h6M20 20v-6h-6"/><path d="M5.5 15a8 8 0 0 0 13.5 2M18.5 9A8 8 0 0 0 5 7"/></svg>重置</button>',
-      '</div><div class="detail-result-head"><div><strong>明细数据</strong><span id="detailResultCount"></span></div><span>每页 ',DETAIL_PAGE_SIZE,' 条</span></div>',
+      '</div><div class="detail-result-head"><div><strong>明细数据</strong><span id="detailResultCount"></span></div><span>默认每页 10 条</span></div>',
       '<div class="table-wrap detail-table-wrap"><table class="report-table detail-data-table"><thead><tr>',
       '<th>项目编号</th><th>项目名称</th><th>业务类型</th><th>指标结果</th><th>项目状态</th><th>指标状态</th><th>完成日期</th>',
-      '</tr></thead><tbody id="detailTableBody"></tbody></table></div><div class="detail-pagination" id="detailPagination"></div></div>'
+      '</tr></thead><tbody id="detailTableBody"></tbody></table></div><div class="app-pagination hidden" id="detailPagination" aria-label="基础明细分页"></div></div>'
     ].join(""),[
       '<button class="ghost-btn" data-close-overlay><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17"/></svg>关闭</button>',
       '<button class="secondary-btn" id="drawerExportButton"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>导出 Excel</button>'
     ].join(""));
+    detailPagination=window.AppPagination.create({
+      container:$("detailPagination"),
+      variant:"table",
+      itemLabel:"条",
+      onChange:renderDetailResults
+    });
     renderDetailResults();
   }
   function goBack(){
@@ -684,6 +691,7 @@
       state.level="group";
       state.person=null;
       state.openMetric=null;
+      metricReportPagination.reset();
       render();
       return;
     }
@@ -691,6 +699,7 @@
       state.level="department";
       state.groupId=null;
       state.openMetric=null;
+      metricReportPagination.reset();
       render();
     }
   }
@@ -701,17 +710,18 @@
     state.groupId=role.groupId||null;
     state.person=role.person||null;
     state.openMetric=null;
+    metricReportPagination.reset();
   }
   function render(){renderControls();renderPath();renderSummary();renderOrganization();renderMetrics()}
   document.addEventListener("click",e=>{
-    const group=e.target.closest("[data-group]"),person=e.target.closest("[data-person]"),level=e.target.closest("[data-level]"),cat=e.target.closest("[data-category]"),roleButton=e.target.closest("[data-role-id]"),periodButton=e.target.closest("[data-period-type]"),toggle=e.target.closest("[data-metric]"),detail=e.target.closest("[data-detail]"),detailPageButton=e.target.closest("[data-detail-page]"),reportPreview=e.target.closest("[data-report-preview]"),reportExport=e.target.closest("[data-report-export]");
-    if(group&&state.role==="departmentHead"){state.level="group";state.groupId=group.dataset.group;state.person=null;render()}
-    else if(person&&state.role!=="member"){state.level="person";state.person=person.dataset.person;render()}
-    else if(level&&level.dataset.level==="department"&&state.role==="departmentHead"){state.level="department";state.groupId=null;state.person=null;render()}
-    else if(level&&level.dataset.level==="group"&&state.role!=="member"){state.level="group";state.person=null;render()}
-    else if(cat){state.category=cat.dataset.category;renderMetrics()}
+    const group=e.target.closest("[data-group]"),person=e.target.closest("[data-person]"),level=e.target.closest("[data-level]"),cat=e.target.closest("[data-category]"),roleButton=e.target.closest("[data-role-id]"),periodButton=e.target.closest("[data-period-type]"),toggle=e.target.closest("[data-metric]"),detail=e.target.closest("[data-detail]"),reportPreview=e.target.closest("[data-report-preview]"),reportExport=e.target.closest("[data-report-export]");
+    if(group&&state.role==="departmentHead"){state.level="group";state.groupId=group.dataset.group;state.person=null;metricReportPagination.reset();render()}
+    else if(person&&state.role!=="member"){state.level="person";state.person=person.dataset.person;metricReportPagination.reset();render()}
+    else if(level&&level.dataset.level==="department"&&state.role==="departmentHead"){state.level="department";state.groupId=null;state.person=null;metricReportPagination.reset();render()}
+    else if(level&&level.dataset.level==="group"&&state.role!=="member"){state.level="group";state.person=null;metricReportPagination.reset();render()}
+    else if(cat){state.category=cat.dataset.category;state.openMetric=null;metricReportPagination.reset();renderMetrics()}
     else if(roleButton){applyRole(roleButton.dataset.roleId);render();window.showToast("已切换为："+activeRole().label+"视角")}
-    else if(periodButton&&periodButton.dataset.periodType!==state.periodType){state.periodType=periodButton.dataset.periodType;render();window.showToast("已切换为："+state.periodType+"经营报表")}
+    else if(periodButton&&periodButton.dataset.periodType!==state.periodType){state.periodType=periodButton.dataset.periodType;metricReportPagination.reset();render();window.showToast("已切换为："+state.periodType+"经营报表")}
     else if(toggle){state.openMetric=state.openMetric===toggle.dataset.metric?null:toggle.dataset.metric;renderMetrics()}
     else if(detail)openDetail(detail.dataset.detail);
     else if(reportPreview)openReportPreview(reportPreview.dataset.reportPreview);
@@ -722,19 +732,15 @@
     else if(e.target.closest("#detailSearchButton")){
       state.detailKeyword=$("detailKeywordInput").value.trim();
       state.detailStatus=$("detailStatusSelect").value;
-      state.detailPage=1;
+      detailPagination.reset();
       renderDetailResults();
     }
     else if(e.target.closest("#detailResetButton")){
       state.detailKeyword="";
       state.detailStatus="all";
-      state.detailPage=1;
+      detailPagination.reset();
       $("detailKeywordInput").value="";
       $("detailStatusSelect").value="all";
-      renderDetailResults();
-    }
-    else if(detailPageButton&&!detailPageButton.disabled){
-      state.detailPage=Number(detailPageButton.dataset.detailPage);
       renderDetailResults();
     }
     else if(e.target.closest("#drawerExportButton"))exportDetailData();
@@ -743,18 +749,25 @@
   document.addEventListener("input",e=>{
     if(e.target.id!=="reportManagementSearch")return;
     state.reportKeyword=e.target.value.trim();
+    reportManagementPagination.reset();
     renderReportManagementRows();
   });
-  $("reportPeriodSelect").addEventListener("change",e=>{state.selectedPeriods[state.periodType]=e.target.value;render();window.showToast("统计周期已切换为："+currentPeriodLabel())});
-  $("reportBusinessTypeSelect").addEventListener("change",e=>{state.businessType=e.target.value;state.category="全部";state.openMetric=null;render();const type=businessTypes.find(item=>item.id===state.businessType);window.showToast("业务类型已切换为："+(state.businessType==="all"?"全部业务":type.label+"业务"))});
+  $("reportPeriodSelect").addEventListener("change",e=>{state.selectedPeriods[state.periodType]=e.target.value;metricReportPagination.reset();render();window.showToast("统计周期已切换为："+currentPeriodLabel())});
+  $("reportBusinessTypeSelect").addEventListener("change",e=>{state.businessType=e.target.value;state.category="全部";state.openMetric=null;metricReportPagination.reset();render();const type=businessTypes.find(item=>item.id===state.businessType);window.showToast("业务类型已切换为："+(state.businessType==="all"?"全部业务":type.label+"业务"))});
   document.addEventListener("keydown",e=>{
     if(e.key==="Escape")closeOverlay();
     else if(e.key==="Enter"&&e.target.id==="detailKeywordInput"){
       state.detailKeyword=e.target.value.trim();
       state.detailStatus=$("detailStatusSelect").value;
-      state.detailPage=1;
+      detailPagination.reset();
       renderDetailResults();
     }
+  });
+  metricReportPagination=window.AppPagination.create({
+    container:$("metricReportPagination"),
+    variant:"table",
+    itemLabel:"项",
+    onChange:()=>{state.openMetric=null;renderMetrics()}
   });
   render();
 })();

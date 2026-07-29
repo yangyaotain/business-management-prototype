@@ -6,6 +6,7 @@ const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptDir, "..");
 const errors = [];
 const warnings = [];
+const ignoredScanDirectories = new Set([".git", ".codex-submit-test", "tmp", "work"]);
 const standalonePages = new Set([
   "pages/login.html",
   "pages/report-word-preview.html",
@@ -15,6 +16,7 @@ function collectFiles(dir, extension, result = []) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const absolute = path.join(dir, entry.name);
     if (entry.isDirectory()) {
+      if (ignoredScanDirectories.has(entry.name)) continue;
       collectFiles(absolute, extension, result);
     } else if (entry.name.endsWith(extension)) {
       result.push(absolute);
@@ -128,6 +130,127 @@ function checkCSS() {
   return cssFiles.length;
 }
 
+function checkSharedPagination() {
+  const cssPath = path.join(projectRoot, "assets", "css", "pagination.css");
+  const scriptPath = path.join(projectRoot, "assets", "js", "pagination.js");
+  for (const file of [cssPath, scriptPath]) {
+    if (!fs.existsSync(file)) {
+      errors.push(`${relative(file)}: shared pagination file missing`);
+    }
+  }
+  if (![cssPath, scriptPath].every((file) => fs.existsSync(file))) return;
+
+  const cssSource = fs.readFileSync(cssPath, "utf8");
+  const scriptSource = fs.readFileSync(scriptPath, "utf8");
+  for (const marker of [
+    ".app-pagination",
+    ".app-pagination-total",
+    ".app-pagination-size.form-select",
+    ".app-pagination-button",
+    ".app-pagination-number",
+    ".app-pagination-ellipsis"
+  ]) {
+    if (!cssSource.includes(marker)) {
+      errors.push(`assets/css/pagination.css: required marker missing ${marker}`);
+    }
+  }
+  for (const marker of [
+    "const PAGINATION_PRESETS",
+    "initialPageSize: 9",
+    "pageSizeOptions: [9, 18, 27]",
+    "initialPageSize: 10",
+    "pageSizeOptions: [10, 20, 50]",
+    "function getPageTokens(",
+    "function create(options)",
+    "function update(items)",
+    "function reset()",
+    "data-pagination-size",
+    "global.AppPagination"
+  ]) {
+    if (!scriptSource.includes(marker)) {
+      errors.push(`assets/js/pagination.js: required marker missing ${marker}`);
+    }
+  }
+
+  const consumerPages = [
+    "dashboard",
+    "operation-dashboard",
+    "users",
+    "performance-dashboard",
+    "special-list",
+    "special-results",
+    "customer-evaluation",
+    "reports"
+  ];
+  for (const pageName of consumerPages) {
+    const pageSource = fs.readFileSync(path.join(projectRoot, "pages", `${pageName}.html`), "utf8");
+    for (const marker of ["../assets/css/pagination.css", "../assets/js/pagination.js"]) {
+      if (!pageSource.includes(marker)) {
+        errors.push(`pages/${pageName}.html: shared pagination marker missing ${marker}`);
+      }
+    }
+  }
+
+  const consumers = [
+    ["dashboard.js", "card", ["metricPagination"]],
+    ["operation-dashboard.js", "card", ["operationMetricPagination"]],
+    ["users.js", "table", ["umPager"]],
+    ["performance-dashboard.js", "table", ["performancePagination"]],
+    ["special-management.js", "table", ["specialListPagination", "specialResultPagination"]],
+    ["customer-evaluation.js", "table", ["ceDetailPagination"]],
+    ["reports.js", "table", ["metricReportPagination", "managedReportPagination", "detailPagination"]]
+  ];
+  for (const [scriptName, variant, mountIds] of consumers) {
+    const consumerScript = fs.readFileSync(path.join(projectRoot, "assets", "js", scriptName), "utf8");
+    const compactScript = consumerScript.replace(/\s+/g, "");
+    for (const marker of ["window.AppPagination.create({", `variant:"${variant}"`]) {
+      if (!compactScript.includes(marker)) {
+        errors.push(`assets/js/${scriptName}: shared pagination marker missing ${marker}`);
+      }
+    }
+    for (const mountId of mountIds) {
+      const pageOrScriptSources = [
+        consumerScript,
+        ...consumerPages.map((pageName) =>
+          fs.readFileSync(path.join(projectRoot, "pages", `${pageName}.html`), "utf8")
+        )
+      ].join("\n");
+      if (!pageOrScriptSources.includes(`id="${mountId}"`) && !consumerScript.includes(`"${mountId}"`)) {
+        errors.push(`assets/js/${scriptName}: shared pagination mount missing ${mountId}`);
+      }
+    }
+  }
+
+  const retiredMarkers = [
+    ".um-pager",
+    ".um-pg-",
+    ".performance-pagination",
+    ".performance-page-",
+    ".special-pagination",
+    ".special-page-",
+    ".ce-pagination",
+    ".ce-page-button",
+    ".detail-pagination",
+    ".detail-page-button",
+    "function renderPagination("
+  ];
+  const paginationConsumerSources = [
+    ...consumers.map(([scriptName]) =>
+      fs.readFileSync(path.join(projectRoot, "assets", "js", scriptName), "utf8")
+    ),
+    fs.readFileSync(path.join(projectRoot, "assets", "css", "users.css"), "utf8"),
+    fs.readFileSync(path.join(projectRoot, "assets", "css", "performance-dashboard.css"), "utf8"),
+    fs.readFileSync(path.join(projectRoot, "assets", "css", "special-management.css"), "utf8"),
+    fs.readFileSync(path.join(projectRoot, "assets", "css", "customer-evaluation.css"), "utf8"),
+    fs.readFileSync(path.join(projectRoot, "assets", "css", "reports-controls.css"), "utf8")
+  ].join("\n");
+  for (const marker of retiredMarkers) {
+    if (paginationConsumerSources.includes(marker)) {
+      errors.push(`shared pagination: retired page-specific marker remains ${marker}`);
+    }
+  }
+}
+
 function checkDashboardMetrics() {
   const dashboardScript = path.join(projectRoot, "assets", "js", "dashboard.js");
   const dashboardPage = path.join(projectRoot, "pages", "dashboard.html");
@@ -189,11 +312,10 @@ function checkDashboardMetrics() {
   }
 
   for (const marker of [
-    "const PAGE_SIZE = 9",
     'id: "projectManager"',
     'id: "qualityAudit"',
     "function renderMetricFilterControls(",
-    "function renderPagination(",
+    "metricPagination.update(metrics)",
     "function resetMetricFilters(",
     'id="metricNameQuery"',
     'id="metricStatusFilter"',
@@ -398,7 +520,7 @@ function checkSpecialManagement() {
     "function openEdit(",
     "function openProgress(",
     "function handleProgressSubmit(",
-    "function renderPagination(",
+    "specialPagination.update(items)",
     "function buildReminderContent(",
     "function getWorkState(",
     "function renderWorkTabs(",
@@ -501,6 +623,7 @@ function checkOperationDashboard() {
     'id="operationScopePanelBody"',
     "业务组运营概览",
     'id="operationMetricGrid"',
+    'id="operationMetricPagination"',
     "../assets/js/operation-dashboard.js"
   ];
   for (const marker of requiredHtmlMarkers) {
@@ -528,6 +651,7 @@ function checkOperationDashboard() {
     "renderPersonPanel()",
     "function getOverviewMetrics(",
     "function renderOverviewMetricValue(",
+    "operationMetricPagination.update(filteredResults)",
     '"tenderCount"',
     '"abnormalCount"'
   ];
@@ -741,10 +865,8 @@ function checkPerformanceDashboard() {
     'id: "member"',
     'defaultLevel: "person"',
     'memberId: "member-2-1"',
-    "const PAGE_SIZE = 6",
     "const PERIOD_OPTIONS",
     'let activePeriodType = "月度"',
-    "let currentPage = 1",
     '"purchaseSuccess",\n      "采购成功率"',
     '"customerSatisfaction",\n      "客户满意度"',
     '"perCapitaOutput",\n      "人均产值"',
@@ -757,7 +879,7 @@ function checkPerformanceDashboard() {
     'function renderGroupMembers(',
     'function renderPersonContext(',
     'function renderExceptions(',
-    'function renderPagination(',
+    "performancePagination.update(items)",
     'function renderTable(',
     'function getTrendAbnormalValue(',
     '"performance-trend-explanation"',
@@ -813,7 +935,7 @@ function checkSystemManagementPages() {
     "batch-delete",
     "reset-password",
     "umDrawer",
-    "umPageSize",
+    "umPager",
     "data-role-option"
   ];
   for (const marker of requiredUserFeatures) {
@@ -871,6 +993,7 @@ function checkMaterials() {
 
 const htmlCount = checkHTML();
 const cssCount = checkCSS();
+checkSharedPagination();
 checkDashboardMetrics();
 checkUnifiedDashboardControls();
 checkPlaceholderPages();
@@ -891,7 +1014,7 @@ if (!fs.existsSync(dashboardUpdateDoc)) {
   errors.push("docs/工作台业务交付指标更新分析与设计.md: update record missing");
 } else {
   const dashboardUpdateSource = fs.readFileSync(dashboardUpdateDoc, "utf8");
-  for (const marker of ["## 6. 实施结果", "采用最新 58 项指标", "指标卡每页 9 项"]) {
+  for (const marker of ["## 6. 实施结果", "采用最新 58 项指标", "默认每页 9 项"]) {
     if (!dashboardUpdateSource.includes(marker)) {
       errors.push(`docs/工作台业务交付指标更新分析与设计.md: marker missing ${marker}`);
     }
@@ -909,4 +1032,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log(`Static validation passed: ${htmlCount} HTML files, ${cssCount} CSS files, 58 metrics, 4 workbench roles, metric name/status filters, 9-card pagination, 1 efficiency dashboard, 1 operation dashboard, 1 customer evaluation analysis, 1 performance dashboard, 1 special management module, 1 shared message center, 1 placeholder page, 3 system pages.`);
+console.log(`Static validation passed: ${htmlCount} HTML files, ${cssCount} CSS files, 1 shared card 9/18/27 and table 10/20/50 pagination component, 58 metrics, 4 workbench roles, metric name/status filters, 1 efficiency dashboard, 1 paginated operation dashboard, 1 customer evaluation analysis, 1 performance dashboard, 1 special management module, 1 shared message center, 1 placeholder page, 3 system pages.`);

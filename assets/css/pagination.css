@@ -1,0 +1,113 @@
+.app-pagination {
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 16px;
+  border-top: 1px solid var(--line);
+}
+
+.app-pagination-total {
+  color: var(--muted);
+  font-size: var(--font-size-secondary);
+  white-space: nowrap;
+}
+
+.app-pagination-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 9px;
+  min-width: 0;
+}
+
+.app-pagination-size.form-select {
+  width: 104px;
+  height: 32px;
+  padding-left: 10px;
+  font-size: var(--font-size-secondary);
+}
+
+.app-pagination-numbers {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.app-pagination-ellipsis {
+  min-width: 18px;
+  color: var(--muted);
+  font-size: var(--font-size-secondary);
+  text-align: center;
+}
+
+.app-pagination-button,
+.app-pagination-number {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #526173;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: var(--font-size-secondary);
+  font-weight: 700;
+}
+
+.app-pagination-button {
+  gap: 4px;
+  padding: 0 9px;
+}
+
+.app-pagination-number {
+  min-width: 32px;
+  padding: 0 7px;
+}
+
+.app-pagination-button:hover:not(:disabled),
+.app-pagination-number:hover,
+.app-pagination-number.active {
+  color: var(--primary);
+  background: var(--primary-hover-bg);
+  border-color: var(--primary-border);
+}
+
+.app-pagination-number.active {
+  background: var(--primary-soft);
+  font-weight: 800;
+}
+
+.app-pagination-button:disabled {
+  color: #b4bdc9;
+  background: #f8fafc;
+  cursor: not-allowed;
+}
+
+.app-pagination-button svg {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@media (max-width: 720px) {
+  .app-pagination {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .app-pagination-total {
+    width: 100%;
+    text-align: center;
+  }
+
+  .app-pagination-actions {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+}

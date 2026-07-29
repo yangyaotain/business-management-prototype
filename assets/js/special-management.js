@@ -1,6 +1,5 @@
 (function setupSpecialManagement() {
   const CURRENT_DATE = "2026-07-28";
-  const PAGE_SIZE = 8;
   const COMPLETION_TREND_SAMPLE = {
     planned: [1, 1, 2, 2, 3, 4, 5, 6, 7, 7, 8, 9],
     actual: [1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2]
@@ -289,8 +288,7 @@
   let activeSpecialId = null;
   let activeDetailTab = "overview";
   let activeDetailNodeId = null;
-  let listPage = 1;
-  let resultPage = 1;
+  let specialPagination = null;
   let editSpecialId = null;
   let editingNodes = [];
   let customSpecialCounter = 1;
@@ -478,42 +476,6 @@
     }).join("");
   }
 
-  function getPageData(items, requestedPage) {
-    const pageCount = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
-    const page = Math.min(Math.max(requestedPage, 1), pageCount);
-    const start = (page - 1) * PAGE_SIZE;
-    return {
-      page,
-      pageCount,
-      pageItems: items.slice(start, start + PAGE_SIZE)
-    };
-  }
-
-  function renderPagination(containerId, type, page, pageCount, total) {
-    const container = $(containerId);
-    if (!container) return;
-    container.innerHTML = [
-      '<span class="special-page-total">共 ',
-      total,
-      " 项</span>",
-      '<button type="button" class="special-page-button" data-special-page-type="',
-      type,
-      '" data-special-page-action="prev"',
-      page <= 1 ? " disabled" : "",
-      '><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>上一页</button>',
-      '<span class="special-page-info">第 ',
-      page,
-      " / ",
-      pageCount,
-      " 页</span>",
-      '<button type="button" class="special-page-button" data-special-page-type="',
-      type,
-      '" data-special-page-action="next"',
-      page >= pageCount ? " disabled" : "",
-      '>下一页<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>'
-    ].join("");
-  }
-
   function populateFilters() {
     const directionFilter = $("specialDirectionFilter");
     if (!directionFilter) return;
@@ -556,10 +518,8 @@
     const items = activeWorkState === "all"
       ? baseItems
       : baseItems.filter((item) => getWorkState(item) === activeWorkState);
-    const pageData = getPageData(items, listPage);
-    listPage = pageData.page;
+    const paginationState = specialPagination.update(items);
     $("specialListCount").textContent = items.length + "项专项";
-    renderPagination("specialListPagination", "list", listPage, pageData.pageCount, items.length);
     if (!items.length) {
       $("specialListBody").innerHTML = [
         '<tr><td colspan="10"><div class="special-empty">',
@@ -572,7 +532,7 @@
       return;
     }
 
-    $("specialListBody").innerHTML = pageData.pageItems.map((item) => {
+    $("specialListBody").innerHTML = paginationState.items.map((item) => {
       const direction = getDirection(item.directionId);
       const status = getStatusMeta(item.status);
       const health = getHealthMeta(getHealth(item));
@@ -756,10 +716,8 @@
   }
 
   function renderResultTable(items) {
-    const pageData = getPageData(items, resultPage);
-    resultPage = pageData.page;
+    const paginationState = specialPagination.update(items);
     $("specialResultCount").textContent = items.length + "项专项";
-    renderPagination("specialResultPagination", "result", resultPage, pageData.pageCount, items.length);
     if (!items.length) {
       $("specialResultTableBody").innerHTML = [
         '<tr><td colspan="9"><div class="special-empty">',
@@ -772,7 +730,7 @@
       return;
     }
 
-    $("specialResultTableBody").innerHTML = pageData.pageItems.map((item) => {
+    $("specialResultTableBody").innerHTML = paginationState.items.map((item) => {
       const direction = getDirection(item.directionId);
       const healthKey = getHealth(item);
       const health = getHealthMeta(healthKey);
@@ -1245,7 +1203,7 @@
     customSpecialCounter += 1;
     specials.unshift(newItem);
     activeYear = String(newItem.year);
-    listPage = 1;
+    specialPagination.reset();
     $("specialYearFilter").value = activeYear;
     closeEdit();
     renderCurrentPage();
@@ -1409,8 +1367,7 @@
   }
 
   function resetPagination() {
-    listPage = 1;
-    resultPage = 1;
+    specialPagination.reset();
   }
 
   function bindFilters() {
@@ -1454,17 +1411,6 @@
         openProgress(progressButton.dataset.openProgress, progressButton.dataset.progressNode);
         return;
       }
-      const pageButton = event.target.closest("[data-special-page-action]");
-      if (pageButton && !pageButton.disabled) {
-        const delta = pageButton.dataset.specialPageAction === "next" ? 1 : -1;
-        if (pageButton.dataset.specialPageType === "list") {
-          listPage += delta;
-          renderList();
-        } else {
-          resultPage += delta;
-          renderResults();
-        }
-      }
     });
 
     $("specialDetailTabs").addEventListener("click", (event) => {
@@ -1493,7 +1439,7 @@
       const button = event.target.closest("[data-work-state]");
       if (!button) return;
       activeWorkState = button.dataset.workState;
-      listPage = 1;
+      specialPagination.reset();
       renderList();
     });
 
@@ -1594,6 +1540,12 @@
 
   function init() {
     if (!IS_LIST_PAGE && !IS_RESULT_PAGE) return;
+    specialPagination = window.AppPagination.create({
+      container: $(IS_LIST_PAGE ? "specialListPagination" : "specialResultPagination"),
+      variant: "table",
+      itemLabel: "项",
+      onChange: renderCurrentPage
+    });
     populateFilters();
     populateFormOptions();
     bindFilters();

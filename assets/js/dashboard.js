@@ -145,8 +145,6 @@
     normal: "正常",
     abnormal: "异常"
   };
-  const PAGE_SIZE = 9;
-
   const ROLE_ICONS = {
     projectManager: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M5 21a7 7 0 0 1 14 0"/></svg>',
     groupLeader: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20a6 6 0 0 1 12 0M14 15a5 5 0 0 1 7 4.5"/></svg>',
@@ -218,8 +216,8 @@
   let activeDirection = "全部";
   let activeMetricName = "";
   let activeMetricStatus = "all";
-  let currentPage = 1;
   let activeMetric = null;
+  let metricPagination = null;
   const selectedPeriods = {
     月度: "2026-07",
     季度: "2026-Q2"
@@ -530,51 +528,13 @@
     $("metricFilterReset").classList.toggle("hidden", !hasActiveMetricFilters());
   }
 
-  function renderPagination(total, pageCount) {
-    const pagination = $("metricPagination");
-    if (total <= PAGE_SIZE || pageCount <= 1) {
-      pagination.innerHTML = "";
-      pagination.classList.add("hidden");
-      return;
-    }
-
-    pagination.classList.remove("hidden");
-    pagination.innerHTML = [
-      '<span class="dashboard-page-total">共 ',
-      total,
-      ' 项</span><button type="button" class="dashboard-page-button" data-page-action="prev"',
-      currentPage === 1 ? " disabled" : "",
-      '><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>上一页</button>',
-      '<div class="dashboard-page-numbers" aria-label="页码">',
-      Array.from({ length: pageCount }, (_, index) => {
-        const page = index + 1;
-        return [
-          '<button type="button" class="dashboard-page-number',
-          page === currentPage ? " active" : "",
-          '" data-page="',
-          page,
-          '" aria-label="第',
-          page,
-          '页" aria-current="',
-          page === currentPage ? "page" : "false",
-          '">',
-          page,
-          "</button>"
-        ].join("");
-      }).join(""),
-      '</div><button type="button" class="dashboard-page-button" data-page-action="next"',
-      currentPage === pageCount ? " disabled" : "",
-      '>下一页<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>'
-    ].join("");
-  }
-
   function renderMetrics() {
     const role = getActiveRole();
     const metrics = getFilteredMetrics();
     const grid = $("metricGrid");
 
     if (!metrics.length) {
-      currentPage = 1;
+      metricPagination.reset();
       const filteredEmpty = hasActiveMetricFilters();
       $("indicatorResultText").textContent = filteredEmpty
         ? "未找到符合当前名称或状态条件的指标。"
@@ -590,16 +550,15 @@
           : "",
         "</div>"
       ].join("");
-      renderPagination(0, 0);
+      metricPagination.update([]);
       renderMetricFilterControls(0);
       return;
     }
 
-    const pageCount = Math.ceil(metrics.length / PAGE_SIZE);
-    currentPage = Math.min(Math.max(currentPage, 1), pageCount);
-    const start = (currentPage - 1) * PAGE_SIZE;
-    const end = Math.min(start + PAGE_SIZE, metrics.length);
-    const pageMetrics = metrics.slice(start, end);
+    const paginationState = metricPagination.update(metrics);
+    const start = paginationState.startIndex - 1;
+    const end = paginationState.endIndex;
+    const pageMetrics = paginationState.items;
     $("indicatorResultText").textContent =
       "匹配" + metrics.length + "项，当前显示第" + (start + 1) + "–" + end + "项；点击指标卡查看口径与" + role.detailLabel;
 
@@ -647,7 +606,6 @@
       "</span></div>",
       "</article>"
     ].join("")).join("");
-    renderPagination(metrics.length, pageCount);
     renderMetricFilterControls(metrics.length);
   }
 
@@ -756,7 +714,7 @@
   function resetMetricFilters(focusSearch) {
     activeMetricName = "";
     activeMetricStatus = "all";
-    currentPage = 1;
+    metricPagination.reset();
     renderMetrics();
     if (focusSearch) $("metricNameQuery").focus();
   }
@@ -778,7 +736,7 @@
       if (!tab || tab.dataset.roleId === activeRoleId) return;
       activeRoleId = tab.dataset.roleId;
       activeDirection = "全部";
-      currentPage = 1;
+      metricPagination.reset();
       closeMetricDrawer();
       renderDashboard();
       window.showToast("已切换为：" + getActiveRole().label + "视图");
@@ -789,7 +747,7 @@
       if (!tab || tab.dataset.periodType === activePeriodType) return;
       activePeriodType = tab.dataset.periodType;
       activeDirection = "全部";
-      currentPage = 1;
+      metricPagination.reset();
       closeMetricDrawer();
       renderDashboard();
       window.showToast("已切换为：" + activePeriodType + "指标");
@@ -797,7 +755,7 @@
 
     $("periodValueSelect").addEventListener("change", (event) => {
       selectedPeriods[activePeriodType] = event.target.value;
-      currentPage = 1;
+      metricPagination.reset();
       renderDashboard();
       window.showToast("统计周期已切换为：" + getCurrentPeriodLabel());
     });
@@ -806,20 +764,20 @@
       const tab = event.target.closest(".indicator-tab");
       if (!tab) return;
       activeDirection = tab.dataset.direction || "全部";
-      currentPage = 1;
+      metricPagination.reset();
       renderTabs();
       renderMetrics();
     });
 
     $("metricNameQuery").addEventListener("input", (event) => {
       activeMetricName = event.target.value;
-      currentPage = 1;
+      metricPagination.reset();
       renderMetrics();
     });
 
     $("metricStatusFilter").addEventListener("change", (event) => {
       activeMetricStatus = event.target.value;
-      currentPage = 1;
+      metricPagination.reset();
       renderMetrics();
     });
 
@@ -842,21 +800,6 @@
         event.preventDefault();
         openMetricDrawer(card.dataset.metricId);
       }
-    });
-
-    $("metricPagination").addEventListener("click", (event) => {
-      const button = event.target.closest("button");
-      if (!button || button.disabled) return;
-      const metrics = getFilteredMetrics();
-      const pageCount = Math.ceil(metrics.length / PAGE_SIZE);
-      if (button.dataset.page) {
-        currentPage = Number(button.dataset.page);
-      } else if (button.dataset.pageAction === "prev") {
-        currentPage = Math.max(1, currentPage - 1);
-      } else if (button.dataset.pageAction === "next") {
-        currentPage = Math.min(pageCount, currentPage + 1);
-      }
-      renderMetrics();
     });
 
     $("alertList").addEventListener("click", (event) => {
@@ -884,6 +827,12 @@
   }
 
   function init() {
+    metricPagination = window.AppPagination.create({
+      container: $("metricPagination"),
+      variant: "card",
+      itemLabel: "项",
+      onChange: renderMetrics
+    });
     renderDashboard();
     bindEvents();
   }

@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="../assets/css/theme.css" />
   <link rel="stylesheet" href="../assets/css/layout.css" />
   <link rel="stylesheet" href="../assets/css/dashboard-controls.css" />
+  <link rel="stylesheet" href="../assets/css/pagination.css" />
   <link rel="stylesheet" href="../assets/css/reports.css" />
   <link rel="stylesheet" href="../assets/css/reports-controls.css" />
 </head>
@@ -95,6 +96,7 @@
             <div class="metric-tabs" id="metricCategoryTabs"></div>
           </div>
           <div class="report-table-wrap"><table class="report-table metric-report-table"><thead><tr><th class="sticky-name">指标名称</th><th>当前区间值</th><th>上期值</th><th class="mom-col">环比</th><th>同期值</th><th class="yoy-col">同比</th><th>年度目标</th><th>年度累计</th><th class="progress-head">完成进度</th><th class="sticky-action">操作</th></tr></thead><tbody id="metricReportBody"></tbody></table></div>
+          <div class="app-pagination hidden" id="metricReportPagination" aria-label="指标明细报表分页"></div>
         </section>
       </section>
     </main>
@@ -102,6 +104,7 @@
   <div id="reportOverlayRoot"></div>
   <script src="../assets/js/navigation.js"></script>
   <script src="../assets/js/common.js"></script>
+  <script src="../assets/js/pagination.js"></script>
   <script src="../assets/vendor/exceljs.min.js"></script>
   <script src="../assets/js/reports.js"></script>
 </body>

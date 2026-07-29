@@ -963,49 +963,6 @@
   text-align: center !important;
 }
 
-.ce-pagination {
-  min-height: 52px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-  padding: 8px 16px;
-}
-
-.ce-page-info {
-  color: var(--muted);
-  font-size: var(--font-size-secondary);
-}
-
-.ce-page-button {
-  min-height: 31px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 0 9px;
-  color: #526173;
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: var(--font-size-secondary);
-  font-weight: 700;
-}
-
-.ce-page-button:hover:not(:disabled) {
-  color: var(--primary);
-  border-color: var(--primary-border);
-}
-
-.ce-page-button svg {
-  width: 13px;
-  height: 13px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
 .ce-drawer-score {
   display: flex;
   align-items: center;

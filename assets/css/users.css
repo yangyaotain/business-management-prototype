@@ -338,20 +338,40 @@
   color: #526173;
   background: var(--primary-panel-bg);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
+  letter-spacing: .01em;
+}
+
+.um-table td {
+  color: #475569;
+  line-height: 1.5;
+}
+
+.um-table tbody tr {
+  transition: background-color .16s ease;
 }
 
 .um-table tbody tr:hover td {
-  background: #fcfdff;
+  background: #f8fbff;
 }
 
 .um-main-text {
   display: block;
   overflow: hidden;
-  color: #172033;
-  font-weight: 700;
+  color: inherit;
+  font-weight: 400;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.um-account-text {
+  color: #334155;
+  font-weight: 500;
+}
+
+.um-user-name {
+  color: #172033;
+  font-weight: 600;
 }
 
 .um-sub-text {
@@ -371,7 +391,7 @@
   align-items: center;
   border-radius: 999px;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .um-status.is-normal {
@@ -390,9 +410,10 @@
   padding: 3px 9px;
   color: var(--primary-dark);
   background: var(--primary-soft);
+  border: 1px solid rgba(var(--primary-rgb), .1);
   border-radius: 999px;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 500;
 }
 
 .um-role-list {
@@ -414,7 +435,7 @@
   border: 0;
   cursor: pointer;
   font-size: var(--font-size-control);
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .um-link-btn:hover {
@@ -429,50 +450,6 @@
   padding: 44px 16px !important;
   color: #94a3b8;
   text-align: center !important;
-}
-
-.um-pager {
-  min-height: 52px;
-  padding: 10px 14px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  border-top: 1px solid #eef2f7;
-}
-
-.um-pg-info {
-  color: #64748b;
-  font-size: var(--font-size-secondary);
-}
-
-.um-pg-buttons {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.um-pg-buttons button,
-.um-pg-buttons select {
-  height: 30px;
-  padding: 0 10px;
-  color: #475569;
-  background: #fff;
-  border: 1px solid #dbe3ef;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 12px;
-}
-
-.um-pg-buttons button.is-current {
-  color: #fff;
-  background: var(--primary);
-  border-color: var(--primary);
-}
-
-.um-pg-buttons button:disabled {
-  color: #cbd5e1;
-  cursor: not-allowed;
 }
 
 .danger-btn {

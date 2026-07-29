@@ -1,5 +1,4 @@
 (function setupCustomerEvaluation() {
-  const PAGE_SIZE = 8;
   const ICONS = {
     back: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>',
     arrow: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>',
@@ -181,9 +180,9 @@
     },
     businessType: "全部",
     rating: "全部",
-    chartFilter: null,
-    currentPage: 1
+    chartFilter: null
   };
+  let detailPagination = null;
 
   function $(id) {
     return document.getElementById(id);
@@ -827,10 +826,6 @@
 
   function renderDetailPanel(records) {
     const detailRecords = getDetailRecords(records);
-    const pageCount = Math.max(1, Math.ceil(detailRecords.length / PAGE_SIZE));
-    state.currentPage = Math.min(state.currentPage, pageCount);
-    const start = (state.currentPage - 1) * PAGE_SIZE;
-    const pageRecords = detailRecords.slice(start, start + PAGE_SIZE);
     const context = state.chartFilter
       ? [
         '<div class="ce-table-context"><span>',
@@ -849,37 +844,40 @@
       context,
       '<div class="ce-table-wrap"><table class="ce-table"><thead><tr><th>评价日期</th><th>项目／标段</th>',
       '<th>客户名称</th><th>业务类型</th><th>综合评分</th><th>评分分类</th><th>问题类型</th><th>操作</th>',
-      "</tr></thead><tbody>",
-      pageRecords.length
-        ? pageRecords.map((record) => {
-          const rating = getRating(record.score);
-          return [
-            "<tr><td>", escapeHTML(formatDate(record.date)),
-            '</td><td><div class="ce-project-cell"><strong title="', escapeHTML(record.project), '">',
-            escapeHTML(record.project), '</strong><span title="', escapeHTML(record.section), '">',
-            escapeHTML(record.section), "</span></div></td><td>", escapeHTML(record.customer),
-            "</td><td>", escapeHTML(record.businessType),
-            '</td><td><span class="ce-score">', formatScore(record.score),
-            '</span></td><td><span class="ce-rating-badge ', rating.className, '">',
-            rating.name, "</span></td><td>", renderProblemTags(record),
-            '</td><td><button type="button" class="ce-view-button" data-view-id="', escapeHTML(record.id),
-            '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6S2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.5"/></svg>查看</button></td></tr>'
-          ].join("");
-        }).join("")
-        : '<tr><td colspan="8" class="ce-table-empty">当前条件下暂无本人评价明细，请调整筛选条件后查看。</td></tr>',
-      "</tbody></table></div>",
-      '<div class="ce-pagination"><button type="button" class="ce-page-button" data-page-action="prev"',
-      state.currentPage <= 1 ? " disabled" : "",
-      '>', ICONS.back, '上一页</button><span class="ce-page-info">第 ',
-      state.currentPage, " / ", pageCount,
-      ' 页</span><button type="button" class="ce-page-button" data-page-action="next"',
-      state.currentPage >= pageCount ? " disabled" : "",
-      '>下一页', ICONS.arrow, "</button></div></section>"
+      '</tr></thead><tbody id="ceDetailTableBody"></tbody></table></div>',
+      '<div class="app-pagination hidden" id="ceDetailPagination" aria-label="本人评价明细分页"></div></section>'
     ].join("");
+  }
+
+  function renderDetailRows(records) {
+    const body = $("ceDetailTableBody");
+    if (!body || !detailPagination) return;
+    const paginationState = detailPagination.update(getDetailRecords(records));
+    body.innerHTML = paginationState.items.length
+      ? paginationState.items.map((record) => {
+        const rating = getRating(record.score);
+        return [
+          "<tr><td>", escapeHTML(formatDate(record.date)),
+          '</td><td><div class="ce-project-cell"><strong title="', escapeHTML(record.project), '">',
+          escapeHTML(record.project), '</strong><span title="', escapeHTML(record.section), '">',
+          escapeHTML(record.section), "</span></div></td><td>", escapeHTML(record.customer),
+          "</td><td>", escapeHTML(record.businessType),
+          '</td><td><span class="ce-score">', formatScore(record.score),
+          '</span></td><td><span class="ce-rating-badge ', rating.className, '">',
+          rating.name, "</span></td><td>", renderProblemTags(record),
+          '</td><td><button type="button" class="ce-view-button" data-view-id="', escapeHTML(record.id),
+          '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6S2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.5"/></svg>查看</button></td></tr>'
+        ].join("");
+      }).join("")
+      : '<tr><td colspan="8" class="ce-table-empty">当前条件下暂无本人评价明细，请调整筛选条件后查看。</td></tr>';
   }
 
   function renderContent() {
     const records = getScopeRecords();
+    if (detailPagination) {
+      detailPagination.destroy();
+      detailPagination = null;
+    }
     const sections = [
       renderContextBanner(),
       renderSummary(records)
@@ -889,6 +887,15 @@
     sections.push(renderAnalysis(records));
     if (state.view === "person") sections.push(renderDetailPanel(records));
     $("ceContent").innerHTML = sections.join("");
+    if (state.view === "person") {
+      detailPagination = window.AppPagination.create({
+        container: $("ceDetailPagination"),
+        variant: "table",
+        itemLabel: "条",
+        onChange: () => renderDetailRows(getScopeRecords())
+      });
+      renderDetailRows(records);
+    }
   }
 
   function renderDashboard() {
@@ -900,7 +907,6 @@
 
   function resetTransientState() {
     state.chartFilter = null;
-    state.currentPage = 1;
     closeDrawer();
   }
 
@@ -978,7 +984,6 @@
       state.chartFilter.value === value
       ? null
       : { type, value };
-    state.currentPage = 1;
     renderContent();
   }
 
@@ -1108,19 +1113,12 @@
       const clearButton = event.target.closest("[data-clear-chart-filter]");
       if (clearButton) {
         state.chartFilter = null;
-        state.currentPage = 1;
         renderContent();
         return;
       }
       const viewButton = event.target.closest("[data-view-id]");
       if (viewButton) {
         openDrawer(viewButton.dataset.viewId);
-        return;
-      }
-      const pageButton = event.target.closest("[data-page-action]");
-      if (pageButton && !pageButton.disabled) {
-        state.currentPage += pageButton.dataset.pageAction === "next" ? 1 : -1;
-        renderContent();
       }
     });
 

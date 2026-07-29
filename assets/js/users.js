@@ -2,7 +2,6 @@
   "use strict";
 
   const roles = ["业务分析师", "运营管理员", "系统管理员"];
-  const pageSizes = [5, 10, 20];
 
   const orgTree = [
     {
@@ -66,8 +65,6 @@
       name: "",
       role: ""
     },
-    page: 1,
-    pageSize: 5,
     selected: new Set(),
     drawer: {
       mode: null,
@@ -77,6 +74,7 @@
     confirm: null,
     ctxOrgId: null
   };
+  let userPagination = null;
 
   function user(id, account, name, deptId, dept, status, role, phone, email, remark) {
     return { id, account, name, deptId, dept, status, role, phone, email, remark };
@@ -264,14 +262,11 @@
 
   function renderTable() {
     const tbody = $("umTbody");
-    const pager = $("umPager");
-    if (!tbody || !pager) return;
+    if (!tbody) return;
 
     const list = filteredUsers();
-    const totalPages = Math.max(1, Math.ceil(list.length / state.pageSize));
-    if (state.page > totalPages) state.page = totalPages;
-    const start = (state.page - 1) * state.pageSize;
-    const pageItems = list.slice(start, start + state.pageSize);
+    const paginationState = userPagination.update(list);
+    const pageItems = paginationState.items;
     const pageIds = new Set(pageItems.map(function (item) { return item.id; }));
 
     tbody.innerHTML = pageItems.length
@@ -288,8 +283,6 @@
       }) && !checkAll.checked;
       checkAll.dataset.pageIds = Array.from(pageIds).join(",");
     }
-
-    pager.innerHTML = renderPager(list.length, totalPages);
   }
 
   function renderUserRow(item) {
@@ -301,8 +294,8 @@
     return [
       "<tr>",
       '<td><input type="checkbox" data-user-check="' + escapeAttr(item.id) + '"' + (state.selected.has(item.id) ? " checked" : "") + " /></td>",
-      '<td><span class="um-main-text" title="' + escapeAttr(item.account) + '">' + escapeHTML(item.account) + "</span></td>",
-      '<td><span class="um-main-text" title="' + escapeAttr(item.name) + '">' + escapeHTML(item.name) + "</span></td>",
+      '<td><span class="um-main-text um-account-text" title="' + escapeAttr(item.account) + '">' + escapeHTML(item.account) + "</span></td>",
+      '<td><span class="um-main-text um-user-name" title="' + escapeAttr(item.name) + '">' + escapeHTML(item.name) + "</span></td>",
       '<td><span class="um-main-text" title="' + escapeAttr(item.dept) + '">' + escapeHTML(item.dept) + "</span></td>",
       '<td><span class="um-main-text" title="' + escapeAttr(item.phone || "-") + '">' + escapeHTML(item.phone || "-") + "</span></td>",
       '<td><span class="um-main-text" title="' + escapeAttr(item.email || "-") + '">' + escapeHTML(item.email || "-") + "</span></td>",
@@ -321,29 +314,9 @@
     ].join("");
   }
 
-  function renderPager(total, totalPages) {
-    const pages = [];
-    for (let page = 1; page <= totalPages; page += 1) {
-      pages.push('<button type="button" data-act="page" data-page="' + page + '"' + (page === state.page ? ' class="is-current"' : "") + ">" + page + "</button>");
-    }
-    const start = total ? (state.page - 1) * state.pageSize + 1 : 0;
-    const end = Math.min(total, state.page * state.pageSize);
-    return [
-      '<div class="um-pg-info">共 ' + total + " 条，当前 " + start + "-" + end + " 条</div>",
-      '<div class="um-pg-buttons">',
-      '<select id="umPageSize">' + pageSizes.map(function (size) {
-        return '<option value="' + size + '"' + (size === state.pageSize ? " selected" : "") + ">" + size + " 条/页</option>";
-      }).join("") + "</select>",
-      '<button type="button" data-act="prev-page"' + (state.page <= 1 ? " disabled" : "") + ">上一页</button>",
-      pages.join(""),
-      '<button type="button" data-act="next-page"' + (state.page >= totalPages ? " disabled" : "") + ">下一页</button>",
-      "</div>"
-    ].join("");
-  }
-
   function setActiveOrg(id) {
     state.activeOrgId = id;
-    state.page = 1;
+    userPagination.reset();
     state.selected.clear();
     renderTree();
     renderTable();
@@ -355,7 +328,7 @@
     if ($("umAccountFilter")) $("umAccountFilter").value = "";
     if ($("umNameFilter")) $("umNameFilter").value = "";
     if ($("umRoleFilter")) $("umRoleFilter").value = "";
-    state.page = 1;
+    userPagination.reset();
     state.selected.clear();
     renderTable();
   }
@@ -538,7 +511,7 @@
       root.children.push(Object.assign(node, { children: [] }));
     }
     state.activeOrgId = node.id;
-    state.page = 1;
+    userPagination.reset();
     state.selected.clear();
     renderTree();
     renderTable();
@@ -613,7 +586,7 @@
     if (removedIds.indexOf(state.activeOrgId) >= 0) state.activeOrgId = "all";
     removedIds.forEach(function (orgId) { state.collapsed.delete(orgId); });
     state.selected.clear();
-    state.page = 1;
+    userPagination.reset();
     renderTree();
     renderTable();
     toast("组织已删除");
@@ -749,7 +722,7 @@
       else if (act === "batch-delete") openConfirm("batch-delete");
       else if (act === "search") {
         syncFiltersFromDom();
-        state.page = 1;
+        userPagination.reset();
         state.selected.clear();
         renderTable();
       } else if (act === "reset-filter") {
@@ -758,15 +731,6 @@
         toast("导入功能已触发");
       } else if (act === "export") {
         toast("导出功能已触发");
-      } else if (act === "prev-page" && state.page > 1) {
-        state.page -= 1;
-        renderTable();
-      } else if (act === "next-page") {
-        state.page += 1;
-        renderTable();
-      } else if (act === "page") {
-        state.page = Number(action.getAttribute("data-page")) || 1;
-        renderTable();
       }
     });
 
@@ -791,14 +755,8 @@
       }
       if (target.id === "umStatusFilter" || target.id === "umRoleFilter") {
         syncFiltersFromDom();
-        state.page = 1;
+        userPagination.reset();
         state.selected.clear();
-        renderTable();
-        return;
-      }
-      if (target.id === "umPageSize") {
-        state.pageSize = Number(target.value) || 5;
-        state.page = 1;
         renderTable();
         return;
       }
@@ -853,6 +811,12 @@
   }
 
   function init() {
+    userPagination = window.AppPagination.create({
+      container: $("umPager"),
+      variant: "table",
+      itemLabel: "条",
+      onChange: renderTable
+    });
     renderTree();
     renderTable();
     bindEvents();

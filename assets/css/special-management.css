@@ -1744,61 +1744,6 @@ body.has-special-overlay {
   overflow: hidden;
 }
 
-.special-pagination {
-  min-height: 52px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-  padding: 8px 16px;
-  border-top: 1px solid var(--line);
-}
-
-.special-page-total,
-.special-page-info {
-  color: var(--muted);
-  font-size: var(--font-size-secondary);
-}
-
-.special-page-total {
-  margin-right: 2px;
-}
-
-.special-page-button {
-  min-height: 31px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 0 9px;
-  color: #526173;
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: var(--font-size-secondary);
-  font-weight: 700;
-}
-
-.special-page-button:hover:not(:disabled) {
-  color: var(--primary);
-  border-color: var(--primary-border);
-}
-
-.special-page-button:disabled {
-  color: #b4bdc9;
-  background: #f8fafc;
-  cursor: not-allowed;
-}
-
-.special-page-button svg {
-  width: 13px;
-  height: 13px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
 .special-data-badge {
   min-width: 184px;
   display: flex;

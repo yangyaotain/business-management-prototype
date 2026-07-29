@@ -190,6 +190,7 @@
   let activeCategory = "all";
   let metricKeyword = "";
   let activeMetricStatus = "all";
+  let operationMetricPagination = null;
 
   const $ = (id) => document.getElementById(id);
 
@@ -525,6 +526,7 @@
     activeGroupId = role.groupId || null;
     activeMemberId = role.memberId || null;
     activeCategory = "all";
+    operationMetricPagination.reset();
   }
 
   function canOpenGroup(groupId) {
@@ -915,6 +917,7 @@
   function clearMetricFilters(focusSearch) {
     metricKeyword = "";
     activeMetricStatus = "all";
+    operationMetricPagination.reset();
     renderMetrics();
     if (focusSearch) $("operationMetricSearch").focus();
   }
@@ -941,10 +944,12 @@
           : "",
         "</div>"
       ].join("");
+      operationMetricPagination.update([]);
       return;
     }
 
-    $("operationMetricGrid").innerHTML = filteredResults.map(({ metricItem, result }) => {
+    const paginationState = operationMetricPagination.update(filteredResults);
+    $("operationMetricGrid").innerHTML = paginationState.items.map(({ metricItem, result }) => {
       return [
         '<article class="operation-metric-card ',
         result.targetStatus,
@@ -1001,6 +1006,7 @@
     if (activeLevel === "person" && activeRoleId !== "member") {
       activeLevel = "group";
       activeMemberId = null;
+      operationMetricPagination.reset();
       renderAll();
       return;
     }
@@ -1009,6 +1015,7 @@
       activeLevel = "department";
       activeGroupId = null;
       activeMemberId = null;
+      operationMetricPagination.reset();
       renderAll();
     }
   }
@@ -1027,6 +1034,7 @@
     $("operationBusinessTypeSelect").addEventListener("change", (event) => {
       activeBusinessType = event.target.value;
       activeCategory = "all";
+      operationMetricPagination.reset();
       renderAll();
       if (window.showToast) window.showToast("业务类型已切换为：" + (activeBusinessType === "all" ? "全部业务" : getBusinessTypeLabel() + "业务"));
     });
@@ -1035,12 +1043,14 @@
       const button = event.target.closest("[data-period-type]");
       if (!button || button.dataset.periodType === activePeriodType) return;
       activePeriodType = button.dataset.periodType;
+      operationMetricPagination.reset();
       renderAll();
       if (window.showToast) window.showToast("已切换为：" + activePeriodType + "运营数据");
     });
 
     $("operationPeriodSelect").addEventListener("change", (event) => {
       selectedPeriods[activePeriodType] = event.target.value;
+      operationMetricPagination.reset();
       renderAll();
       if (window.showToast) window.showToast("统计周期已切换为：" + getCurrentPeriodOption().label);
     });
@@ -1056,6 +1066,7 @@
         activeLevel = "group";
         activeMemberId = null;
       }
+      operationMetricPagination.reset();
       renderAll();
     });
 
@@ -1065,6 +1076,7 @@
         activeGroupId = groupButton.dataset.groupId;
         activeMemberId = null;
         activeLevel = "group";
+        operationMetricPagination.reset();
         renderAll();
         return;
       }
@@ -1074,6 +1086,7 @@
       if (!canOpenMember(activeGroupId, memberButton.dataset.memberId)) return;
       activeMemberId = memberButton.dataset.memberId;
       activeLevel = "person";
+      operationMetricPagination.reset();
       renderAll();
     });
 
@@ -1081,17 +1094,20 @@
       const button = event.target.closest("[data-category-id]");
       if (!button || button.dataset.categoryId === activeCategory) return;
       activeCategory = button.dataset.categoryId;
+      operationMetricPagination.reset();
       renderCategoryTabs();
       renderMetrics();
     });
 
     $("operationMetricSearch").addEventListener("input", (event) => {
       metricKeyword = event.target.value;
+      operationMetricPagination.reset();
       renderMetrics();
     });
 
     $("operationMetricStatusFilter").addEventListener("change", (event) => {
       activeMetricStatus = event.target.value;
+      operationMetricPagination.reset();
       renderMetrics();
     });
 
@@ -1106,6 +1122,12 @@
   }
 
   function init() {
+    operationMetricPagination = window.AppPagination.create({
+      container: $("operationMetricPagination"),
+      variant: "card",
+      itemLabel: "项",
+      onChange: renderMetrics
+    });
     resetViewForRole();
     bindEvents();
     renderAll();

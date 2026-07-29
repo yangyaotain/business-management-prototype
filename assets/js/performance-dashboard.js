@@ -1,5 +1,4 @@
 (function setupPerformanceDashboard() {
-  const PAGE_SIZE = 6;
   const ICONS = {
     department:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V7l8-4 8 4v14M8 10h2M14 10h2M8 14h2M14 14h2M10 21v-3h4v3"/></svg>',
@@ -281,7 +280,7 @@
   };
   let activeCategory = "all";
   let activeStatus = "all";
-  let currentPage = 1;
+  let performancePagination = null;
   let activeDetailId = null;
   let editingItemId = null;
   let customItemCounter = 1;
@@ -964,33 +963,11 @@
     }).join("");
   }
 
-  function renderPagination(total, pageCount) {
-    $("performancePagination").innerHTML = [
-      '<span class="performance-page-total">共 ',
-      total,
-      " 项</span>",
-      '<button type="button" class="performance-page-button" data-page-action="prev"',
-      currentPage <= 1 ? " disabled" : "",
-      '><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>上一页</button>',
-      '<span class="performance-page-info">第 ',
-      currentPage,
-      " / ",
-      pageCount,
-      " 页</span>",
-      '<button type="button" class="performance-page-button" data-page-action="next"',
-      currentPage >= pageCount ? " disabled" : "",
-      '>下一页<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>'
-    ].join("");
-  }
-
   function renderTable() {
     const items = getFilteredItems();
-    const pageCount = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
-    currentPage = Math.min(Math.max(currentPage, 1), pageCount);
-    const start = (currentPage - 1) * PAGE_SIZE;
-    const pageItems = items.slice(start, start + PAGE_SIZE);
+    const paginationState = performancePagination.update(items);
+    const pageItems = paginationState.items;
     $("performanceResultCount").textContent = items.length + "项指标";
-    renderPagination(items.length, pageCount);
 
     if (!items.length) {
       $("performanceTableBody").innerHTML = [
@@ -1507,7 +1484,7 @@
       current.challenge = storedChallenge;
       if (current.scope === "person") current.targetSource = "personal";
       if (current.scope === "group") syncPersonItemsForGroupMetric(current);
-      currentPage = 1;
+      performancePagination.reset();
       closeConfig();
       renderAll();
       openDetail(current.id);
@@ -1554,7 +1531,7 @@
     activeMemberId = scope === "person" ? memberId : null;
     activeCategory = "all";
     activeStatus = "all";
-    currentPage = 1;
+    performancePagination.reset();
     $("performanceCategorySelect").value = "all";
     $("performanceStatusSelect").value = "all";
     closeConfig();
@@ -1569,7 +1546,7 @@
     activeGroupId = groupId;
     activeMemberId = null;
     activeStatus = "all";
-    currentPage = 1;
+    performancePagination.reset();
     $("performanceStatusSelect").value = "all";
     closeDetail();
     renderAll();
@@ -1582,7 +1559,7 @@
     activeLevel = "person";
     activeMemberId = memberId;
     activeStatus = "all";
-    currentPage = 1;
+    performancePagination.reset();
     $("performanceStatusSelect").value = "all";
     closeDetail();
     renderAll();
@@ -1600,7 +1577,7 @@
       return;
     }
     activeStatus = "all";
-    currentPage = 1;
+    performancePagination.reset();
     $("performanceStatusSelect").value = "all";
     closeDetail();
     renderAll();
@@ -1623,7 +1600,7 @@
     activeMemberId = role.memberId || null;
     activeCategory = "all";
     activeStatus = "all";
-    currentPage = 1;
+    performancePagination.reset();
     $("performanceCategorySelect").value = "all";
     $("performanceStatusSelect").value = "all";
     closeDetail();
@@ -1643,7 +1620,7 @@
       const button = event.target.closest("[data-period-type]");
       if (!button || button.dataset.periodType === activePeriodType) return;
       activePeriodType = button.dataset.periodType;
-      currentPage = 1;
+      performancePagination.reset();
       closeDetail();
       renderAll();
       notify("已切换为：" + activePeriodType + "绩效数据");
@@ -1651,7 +1628,7 @@
 
     $("performancePeriodSelect").addEventListener("change", (event) => {
       selectedPeriods[activePeriodType] = event.target.value;
-      currentPage = 1;
+      performancePagination.reset();
       closeDetail();
       renderAll();
       notify("统计周期已切换为：" + getPeriodLabel());
@@ -1667,7 +1644,7 @@
         activeGroupId = event.target.value;
         activeMemberId = null;
       }
-      currentPage = 1;
+      performancePagination.reset();
       renderAll();
       const group = getGroup(activeGroupId);
       notify(activeLevel === "department" ? "已切换为部门绩效视图" : "已切换为：" + group.name);
@@ -1675,20 +1652,13 @@
 
     $("performanceCategorySelect").addEventListener("change", (event) => {
       activeCategory = event.target.value;
-      currentPage = 1;
+      performancePagination.reset();
       renderAll();
     });
 
     $("performanceStatusSelect").addEventListener("change", (event) => {
       activeStatus = event.target.value;
-      currentPage = 1;
-      renderTable();
-    });
-
-    $("performancePagination").addEventListener("click", (event) => {
-      const button = event.target.closest("[data-page-action]");
-      if (!button || button.disabled) return;
-      currentPage += button.dataset.pageAction === "next" ? 1 : -1;
+      performancePagination.reset();
       renderTable();
     });
 
@@ -1779,6 +1749,12 @@
   }
 
   function init() {
+    performancePagination = window.AppPagination.create({
+      container: $("performancePagination"),
+      variant: "table",
+      itemLabel: "项",
+      onChange: renderTable
+    });
     populateConfigMetricOptions();
     renderAll();
     bindEvents();

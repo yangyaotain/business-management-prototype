@@ -485,31 +485,6 @@
   font-size: var(--font-size-secondary);
 }
 
-.detail-pagination {
-  min-height: 42px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 5px;
-  padding-top: 11px;
-}
-
-.detail-page-button {
-  min-width: 30px;
-  height: 30px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 0 8px;
-  color: #526173;
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  font-size: var(--font-size-secondary);
-  font-weight: 700;
-}
-
 /* Typography normalization for the minified report module loaded before this file. */
 .report-field > span,
 .compare-switch button,
@@ -535,33 +510,6 @@
 
 .preview-table {
   font-size: var(--font-size-caption);
-}
-
-.detail-page-button:hover:not(:disabled),
-.detail-page-button.active {
-  color: var(--primary);
-  background: var(--primary-soft);
-  border-color: var(--primary-border);
-}
-
-.detail-page-button.active {
-  box-shadow: 0 3px 9px rgba(var(--primary-rgb), 0.1);
-}
-
-.detail-page-button:disabled {
-  color: #c0c7d1;
-  background: #f8fafc;
-  cursor: not-allowed;
-}
-
-.detail-page-button svg {
-  width: 13px;
-  height: 13px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
 }
 
 @media (max-width: 900px) {
