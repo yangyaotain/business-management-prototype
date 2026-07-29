@@ -1,7 +1,7 @@
 (function setupSpecialManagement() {
   const CURRENT_DATE = "2026-07-28";
   const COMPLETION_TREND_SAMPLE = {
-    planned: [1, 1, 2, 2, 3, 4, 5, 6, 7, 7, 8, 9],
+    planned: [1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 5, 9],
     actual: [1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2]
   };
   const PAGE_KEY = document.body.dataset.page;
@@ -657,7 +657,6 @@
   }
 
   function renderCompletionChart(items) {
-    const maximum = Math.max(items.length, 1);
     const useDefaultSample = activeYear === "2026" &&
       activeDirection === "all" &&
       activeStatus === "all" &&
@@ -676,26 +675,92 @@
       return { month, planned, actual };
     });
 
-    $("specialCompletionChart").innerHTML = months.map((item) => {
-      const plannedHeight = Math.max(item.planned ? 8 : 4, Math.round((item.planned / maximum) * 170));
-      const actualHeight = Math.max(item.actual ? 8 : 4, Math.round((item.actual / maximum) * 170));
-      return [
-        '<div class="special-chart-month">',
-        '<div class="special-chart-bar planned" style="height:',
-        plannedHeight,
-        'px"><span>',
-        item.planned,
-        "</span></div>",
-        '<div class="special-chart-bar actual" style="height:',
-        actualHeight,
-        'px"><span>',
-        item.actual,
-        "</span></div>",
-        '<div class="special-chart-label">',
-        item.month,
-        "月</div></div>"
-      ].join("");
-    }).join("");
+    const dataMaximum = Math.max(...months.flatMap((item) => [item.planned, item.actual]), 1);
+    const roughStep = dataMaximum / 5;
+    const magnitude = 10 ** Math.floor(Math.log10(roughStep));
+    const normalizedStep = roughStep / magnitude;
+    const niceStep = normalizedStep <= 1 ? 1 : normalizedStep <= 2 ? 2 : normalizedStep <= 5 ? 5 : 10;
+    const tickStep = dataMaximum <= 5 ? 1 : Math.max(1, niceStep * magnitude);
+    const axisMaximum = Math.ceil(dataMaximum / tickStep) * tickStep;
+    const axisSteps = axisMaximum / tickStep;
+    const axisValues = Array.from(
+      { length: axisSteps + 1 },
+      (_, index) => Math.round(axisMaximum - (axisMaximum / axisSteps) * index)
+    );
+    const chart = $("specialCompletionChart");
+    chart.setAttribute(
+      "aria-label",
+      "计划与实际累计完成数量对比。" + months.map((item) => (
+        item.month + "月计划" + item.planned + "项、实际" + item.actual + "项"
+      )).join("；")
+    );
+    chart.innerHTML = [
+      '<span class="special-chart-unit">单位：项</span>',
+      '<div class="special-chart-body">',
+      '<div class="special-chart-y-axis" aria-hidden="true">',
+      axisValues.map((value) => "<span>" + value + "</span>").join(""),
+      "</div>",
+      '<div class="special-chart-plot">',
+      '<div class="special-chart-grid" style="--grid-rows:',
+      axisSteps,
+      '" aria-hidden="true">',
+      Array.from({ length: axisSteps }, () => "<i></i>").join(""),
+      "</div>",
+      '<div class="special-chart-columns">',
+      months.map((item) => {
+        const plannedHeight = Math.max(item.planned ? 5 : 1.5, (item.planned / axisMaximum) * 100);
+        const actualHeight = Math.max(item.actual ? 5 : 1.5, (item.actual / axisMaximum) * 100);
+        const isCompleted = item.actual >= item.planned;
+        const completionState = isCompleted ? "completed" : "incomplete";
+        const statusLabel = isCompleted
+          ? "已达成计划"
+          : "未达成计划，较计划少" + (item.planned - item.actual) + "项";
+        return [
+          '<div class="special-chart-month">',
+          '<div class="special-chart-bars">',
+          '<div class="special-chart-bar planned',
+          item.planned ? "" : " is-zero",
+          '" style="height:',
+          plannedHeight.toFixed(2),
+          '%" title="',
+          item.month,
+          "月计划累计完成 ",
+          item.planned,
+          ' 项" aria-label="',
+          item.month,
+          "月计划累计完成",
+          item.planned,
+          '项"><span>',
+          item.planned,
+          "</span></div>",
+          '<div class="special-chart-bar actual ',
+          completionState,
+          item.actual ? "" : " is-zero",
+          '" style="height:',
+          actualHeight.toFixed(2),
+          '%" title="',
+          item.month,
+          "月实际累计完成 ",
+          item.actual,
+          " 项，",
+          statusLabel,
+          '" aria-label="',
+          item.month,
+          "月实际累计完成",
+          item.actual,
+          "项，",
+          statusLabel,
+          '"><span>',
+          item.actual,
+          "</span></div>",
+          "</div>",
+          '<div class="special-chart-label">',
+          item.month,
+          "月</div></div>"
+        ].join("");
+      }).join(""),
+      "</div></div></div>"
+    ].join("");
   }
 
   function renderSingleProgress(value, type, health) {
