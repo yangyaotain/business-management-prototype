@@ -15,20 +15,28 @@
 
 .special-filter-fields {
   flex-wrap: nowrap;
+  justify-content: flex-end;
 }
 
 .special-filter-field {
   min-width: 0;
-  flex: 0 0 126px;
+  flex: 0 0 auto;
 }
 
 .special-filter-field.special-direction-field {
-  flex-basis: 220px;
+  flex: 0 0 220px;
 }
 
 .special-filter-field .form-select {
-  width: 100%;
+  width: 132px;
+  min-width: 132px;
+  flex: 0 0 132px;
+}
+
+.special-filter-field.special-direction-field .form-select {
+  width: auto;
   min-width: 0;
+  flex: 1 1 auto;
 }
 
 .special-reminder-panel {
@@ -2190,15 +2198,23 @@ body.has-special-overlay {
   color: #667085;
 }
 
-@media (max-width: 1180px) {
+@media (max-width: 1280px) {
   .special-filter-panel .dashboard-filter-row {
     align-items: flex-start;
+    flex-wrap: wrap;
+    row-gap: 12px;
   }
 
   .special-filter-fields {
     width: 100%;
+    flex: none;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 1180px) {
+  .special-filter-fields {
     flex-wrap: wrap;
-    justify-content: flex-start;
   }
 }
 

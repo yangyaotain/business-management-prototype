@@ -28,7 +28,8 @@
       children: [
         { key: "efficiency-dashboard", title: "人效看板", href: "efficiency-dashboard.html" },
         { key: "operation-dashboard", title: "运营看板", href: "operation-dashboard.html" },
-        { key: "reports", title: "报表报告", href: "reports.html" },
+        { key: "reports", title: "数据报表", href: "reports.html" },
+        { key: "report-documents", title: "数据报告", href: "report-documents.html" },
         { key: "customer-evaluation", title: "客户评价", href: "customer-evaluation.html" }
       ]
     },

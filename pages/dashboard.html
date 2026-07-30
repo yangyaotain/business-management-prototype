@@ -52,7 +52,7 @@
           <div class="page-title">
             <div class="breadcrumb"><span>首页</span><span>/</span><span class="current">工作台</span></div>
             <h1>业务交付指标工作台</h1>
-            <p id="pageViewDescription">按项目经理职责查看月度交付指标状态，识别异常并穿透查看个人与所属业务组明细。</p>
+            <p id="pageViewDescription">按项目经理职责查看月度交付指标状态，识别异常并查看指标信息与基础数据。</p>
           </div>
         </div>
 
@@ -156,7 +156,7 @@
   </div>
 
   <div class="drawer-mask hidden" id="metricDrawerMask"></div>
-  <aside class="drawer hidden" id="metricDrawer" role="dialog" aria-modal="true" aria-labelledby="metricDrawerTitle">
+  <aside class="drawer metric-detail-drawer hidden" id="metricDrawer" role="dialog" aria-modal="true" aria-labelledby="metricDrawerTitle">
     <div class="drawer-head">
       <div><h2 id="metricDrawerTitle">指标详情</h2><p id="metricDrawerSubtitle"></p></div>
       <button type="button" class="icon-only-btn" id="closeMetricDrawer" aria-label="关闭指标详情">
@@ -164,25 +164,13 @@
       </button>
     </div>
     <div class="drawer-body" id="metricDrawerBody"></div>
-    <div class="drawer-foot">
-      <button type="button" class="ghost-btn" id="drawerCloseButton">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
-        关闭
-      </button>
-      <button type="button" class="secondary-btn" id="drawerExportButton">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M5 19h14"/></svg>
-        导出明细
-      </button>
-      <button type="button" class="primary-btn" id="drawerDetailButton">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v14"/><path d="M8 7h8M8 11h8M8 15h5"/></svg>
-        查看基础数据
-      </button>
-    </div>
   </aside>
 
   <script src="../assets/js/navigation.js"></script>
   <script src="../assets/js/common.js"></script>
   <script src="../assets/js/pagination.js"></script>
+  <script src="../assets/vendor/exceljs.min.js"></script>
+  <script src="../assets/js/excel-export.js"></script>
   <script src="../assets/js/dashboard.js"></script>
 </body>
 </html>

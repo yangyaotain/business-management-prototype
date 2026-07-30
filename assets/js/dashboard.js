@@ -158,24 +158,21 @@
       label: "项目经理",
       userName: "李文",
       avatar: "李",
-      ownerTokens: ["项目经理", "全员"],
-      detailLabel: "个人与所属业务组明细"
+      ownerTokens: ["项目经理", "全员"]
     },
     {
       id: "groupLeader",
       label: "业务组长",
       userName: "张明",
       avatar: "张",
-      ownerTokens: ["组长", "全员"],
-      detailLabel: "业务组与组员明细"
+      ownerTokens: ["组长", "全员"]
     },
     {
       id: "qualityAudit",
       label: "质量审核",
       userName: "王敏",
       avatar: "王",
-      ownerTokens: ["质量管理岗", "质量审核岗", "全员"],
-      detailLabel: "质量审核与关联业务组明细"
+      ownerTokens: ["质量管理岗", "质量审核岗", "全员"]
     },
     {
       id: "departmentHead",
@@ -183,7 +180,6 @@
       userName: "陈建",
       avatar: "陈",
       ownerTokens: [],
-      detailLabel: "部门与业务组明细",
       viewAll: true
     }
   ];
@@ -218,10 +214,26 @@
   let activeMetricStatus = "all";
   let activeMetric = null;
   let metricPagination = null;
+  let baseDataRecords = [];
+  let baseDataKeyword = "";
+  let baseDataStatus = "all";
+  let baseDataPagination = null;
   const selectedPeriods = {
     月度: "2026-07",
     季度: "2026-Q2"
   };
+  const BASE_DATA_PROJECTS = [
+    "城市更新全过程咨询项目",
+    "区域集中采购代理项目",
+    "新能源设备采购项目",
+    "产业园区造价咨询项目",
+    "总部办公区改造项目",
+    "年度框架协议采购项目",
+    "物流仓储服务采购项目",
+    "信息化平台建设项目"
+  ];
+  const BASE_DATA_GROUPS = ["第一业务组", "第二业务组", "造价业务组", "非电力业务组"];
+  const BASE_DATA_OWNERS = ["李文", "张明", "王敏", "赵倩", "孙岚", "周凯", "陈宇", "刘畅"];
 
   const $ = (id) => document.getElementById(id);
 
@@ -305,7 +317,7 @@
     $("currentUserRole").textContent = role.label;
     $("topbarViewDescription").textContent = role.label + " · " + activePeriodType + "交付指标视图";
     $("pageViewDescription").textContent =
-      "按" + role.label + "职责查看" + activePeriodType + "交付指标状态，识别异常并穿透查看" + role.detailLabel + "。";
+      "按" + role.label + "职责查看" + activePeriodType + "交付指标状态，识别异常并查看指标信息与基础数据。";
     $("statusOverviewDescription").textContent =
       "统计口径：" + role.label + " · " + activePeriodType + "指标";
     $("currentPeriodTag").textContent = periodLabel;
@@ -560,7 +572,7 @@
     const end = paginationState.endIndex;
     const pageMetrics = paginationState.items;
     $("indicatorResultText").textContent =
-      "匹配" + metrics.length + "项，当前显示第" + (start + 1) + "–" + end + "项；点击指标卡查看口径与" + role.detailLabel;
+      "匹配" + metrics.length + "项，当前显示第" + (start + 1) + "–" + end + "项；点击指标卡查看指标信息与基础数据";
 
     grid.innerHTML = pageMetrics.map((metric) => [
       '<article class="metric-card ',
@@ -599,11 +611,12 @@
       '%</strong></div><div class="metric-progress-bar"><span style="width:',
       Math.min(metric.progress, 100),
       '%"></span></div></div>',
-      '<div class="metric-meta"><span>',
+      '<div class="metric-meta"><span class="metric-meta-info">',
       escapeHTML(metric.owner),
-      "</span><span>",
+      " · ",
       escapeHTML(metric.period),
-      "</span></div>",
+      '</span><span class="metric-card-action"><span>查看详情</span>',
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M14 7l5 5-5 5"/></svg></span></div>',
       "</article>"
     ].join("")).join("");
     renderMetricFilterControls(metrics.length);
@@ -634,81 +647,301 @@
     return rowsByRole[activeRoleId] || rowsByRole.departmentHead;
   }
 
-  function renderMetricDefinitionSections(metric) {
+  function padNumber(value, length) {
+    return String(value).padStart(length, "0");
+  }
+
+  function currentPeriodValue() {
+    return selectedPeriods[activePeriodType];
+  }
+
+  function buildBaseDataDate(index) {
+    const value = currentPeriodValue();
+    if (activePeriodType === "季度") {
+      const match = value.match(/^(\d{4})-Q([1-4])$/);
+      if (match) {
+        const month = (Number(match[2]) - 1) * 3 + (index % 3) + 1;
+        const day = 4 + (index * 3) % 23;
+        return match[1] + "-" + padNumber(month, 2) + "-" + padNumber(day, 2);
+      }
+    }
+    return value + "-" + padNumber(3 + (index * 3) % 25, 2);
+  }
+
+  function buildBaseDataValue(metric, index) {
+    const display = String(metric.display);
+    const numberMatch = display.match(/-?\d+(?:\.\d+)?/);
+    if (!numberMatch) return display;
+    const original = Number(numberMatch[0]);
+    const suffix = display.slice(numberMatch.index + numberMatch[0].length);
+    const offset = (index % 5) - 2;
+    let nextValue;
+    if (suffix.indexOf("%") >= 0) {
+      nextValue = Math.max(0, original + offset * 0.6).toFixed(1);
+    } else if (numberMatch[0].indexOf(".") >= 0) {
+      nextValue = Math.max(0, original + offset * Math.max(original * 0.035, 0.1)).toFixed(
+        suffix.indexOf("亿元") >= 0 ? 2 : 1
+      );
+    } else {
+      nextValue = String(Math.max(0, Math.round(original + offset)));
+    }
+    return display.replace(numberMatch[0], nextValue);
+  }
+
+  function getRoleBaseDataGroups() {
+    if (activeRoleId === "projectManager" || activeRoleId === "groupLeader") return ["第二业务组"];
+    return BASE_DATA_GROUPS;
+  }
+
+  function buildBaseDataRecords(metric) {
+    const rowCounts = {
+      projectManager: 12,
+      groupLeader: 18,
+      qualityAudit: 16,
+      departmentHead: 24
+    };
+    const total = rowCounts[activeRoleId] || 18;
+    const groups = getRoleBaseDataGroups();
+    const periodCode = currentPeriodValue().replace(/[^0-9Q]/g, "");
+    return Array.from({ length: total }, (_, index) => {
+      const abnormal = metric.status === "abnormal" && index % 4 === 1;
+      return {
+        id: "JCSJ-" + padNumber(metric.id, 3) + "-" + periodCode + "-" + padNumber(index + 1, 3),
+        project: BASE_DATA_PROJECTS[(metric.id + index) % BASE_DATA_PROJECTS.length],
+        group: groups[index % groups.length],
+        owner: BASE_DATA_OWNERS[(metric.id * 2 + index) % BASE_DATA_OWNERS.length],
+        value: buildBaseDataValue(metric, index),
+        status: abnormal ? "abnormal" : "normal",
+        date: buildBaseDataDate(index)
+      };
+    });
+  }
+
+  function filteredBaseDataRecords() {
+    const keyword = baseDataKeyword.trim().toLocaleLowerCase("zh-CN");
+    return baseDataRecords.filter((record) => {
+      const matchesKeyword = !keyword || [record.id, record.project, record.group, record.owner]
+        .some((value) => String(value).toLocaleLowerCase("zh-CN").includes(keyword));
+      const matchesStatus = baseDataStatus === "all" || record.status === baseDataStatus;
+      return matchesKeyword && matchesStatus;
+    });
+  }
+
+  function destroyBaseDataPagination() {
+    if (baseDataPagination) baseDataPagination.destroy();
+    baseDataPagination = null;
+  }
+
+  function renderMetricDefinitionItem(metric, wide) {
     const calculation = metric.calculation.trim();
     const definition = metric.definition.trim();
-    const sections = [];
-    if (calculation) {
-      sections.push(
-        '<div class="drawer-section"><h3>计算逻辑</h3><p class="drawer-definition">' +
-        escapeHTML(calculation).replace(/\r?\n/g, "<br>") +
-        "</p></div>"
-      );
+    let content = "源需求暂未提供计算逻辑或详细说明。";
+    if (calculation && definition && definition !== calculation) {
+      content = "计算逻辑：" + calculation + "\n指标说明：" + definition;
+    } else if (calculation || definition) {
+      content = calculation || definition;
     }
-    if (definition && definition !== calculation) {
-      sections.push(
-        '<div class="drawer-section"><h3>指标说明</h3><p class="drawer-definition">' +
-        escapeHTML(definition).replace(/\r?\n/g, "<br>") +
-        "</p></div>"
-      );
-    }
-    if (!sections.length) {
-      sections.push(
-        '<div class="drawer-section"><h3>指标说明</h3><p class="drawer-definition">源需求暂未提供计算逻辑或详细说明。</p></div>'
-      );
-    }
-    return sections.join("");
+    return [
+      '<div class="metric-basic-item metric-basic-definition', wide ? " wide" : "", '"><span>指标说明</span><p>',
+      escapeHTML(content).replace(/\r?\n/g, "<br>"),
+      "</p></div>"
+    ].join("");
+  }
+
+  function renderBaseDataTable() {
+    if (!baseDataPagination) return;
+    const records = filteredBaseDataRecords();
+    const paginationState = baseDataPagination.update(records);
+    $("baseDataTableBody").innerHTML = paginationState.items.length
+      ? paginationState.items.map((record) => [
+        '<tr><td class="base-data-code-cell" title="', escapeHTML(record.id),
+        '"><span class="base-data-code">', escapeHTML(record.id), "</span></td>",
+        '<td class="base-data-project-cell" title="', escapeHTML(record.project),
+        '"><strong class="base-data-project">', escapeHTML(record.project), "</strong></td>",
+        '<td title="', escapeHTML(record.group), '">', escapeHTML(record.group), "</td>",
+        "<td>", escapeHTML(record.owner), "</td>",
+        "<td>", escapeHTML(record.value), "</td>",
+        '<td><span class="base-data-status ', record.status, '">',
+        STATUS_LABELS[record.status],
+        "</span></td>",
+        "<td>", escapeHTML(record.date), "</td></tr>"
+      ].join("")).join("")
+      : '<tr><td colspan="7"><div class="base-data-empty"><strong>未找到匹配记录</strong><span>请调整关键字或状态筛选条件。</span></div></td></tr>';
+  }
+
+  function renderMetricDrawer() {
+    if (!activeMetric) return;
+    destroyBaseDataPagination();
+    baseDataKeyword = "";
+    baseDataStatus = "all";
+    baseDataRecords = buildBaseDataRecords(activeMetric);
+    const role = getActiveRole();
+    const scopeRows = buildDetailRows(activeMetric);
+    $("metricDrawerTitle").textContent = activeMetric.name;
+    $("metricDrawerSubtitle").textContent =
+      role.label + "视图 · " + activeMetric.direction + " · " + activeMetric.scope + " · " + getCurrentPeriodLabel();
+    $("metricDrawerBody").innerHTML = [
+      '<div class="metric-integrated-layout">',
+      '<section class="metric-overview-panel">',
+      '<div class="metric-overview-card">',
+      '<div class="metric-basic-grid">',
+      '<div class="metric-basic-item metric-basic-key metric-basic-current"><span>当前值</span><strong>',
+      escapeHTML(activeMetric.display), "</strong></div>",
+      '<div class="metric-basic-item metric-basic-key metric-basic-target"><span>目标值</span><strong>',
+      escapeHTML(activeMetric.targetDisplay), "</strong></div>",
+      '<div class="metric-basic-item metric-basic-key metric-basic-progress"><span>完成进度</span><strong>',
+      activeMetric.progress, "%</strong></div>",
+      '<div class="metric-basic-item metric-basic-key metric-basic-status ', activeMetric.status,
+      '"><span>指标状态</span><strong class="', activeMetric.status, '">',
+      STATUS_LABELS[activeMetric.status], "</strong></div>",
+      '<div class="metric-basic-item metric-basic-attribute"><span>工作方向</span><strong>',
+      escapeHTML(activeMetric.direction), "</strong></div>",
+      '<div class="metric-basic-item metric-basic-attribute"><span>业务范围</span><strong>',
+      escapeHTML(activeMetric.scope), "</strong></div>",
+      '<div class="metric-basic-item metric-basic-attribute"><span>统计周期</span><strong>',
+      escapeHTML(getCurrentPeriodLabel()), "</strong></div>",
+      '<div class="metric-basic-item metric-basic-attribute"><span>指标责任人</span><strong>',
+      escapeHTML(activeMetric.owner), "</strong></div>",
+      scopeRows.map((row) => [
+        '<div class="metric-basic-item metric-basic-scope"><span>', escapeHTML(row[0]),
+        '</span><div class="metric-basic-result"><strong>', escapeHTML(row[1]),
+        '</strong><em class="', row[2] === "正常" ? "normal" : "abnormal", '">',
+        escapeHTML(row[2]), '</em></div><small>负责人：', escapeHTML(row[3]), "</small></div>"
+      ].join("")).join(""),
+      renderMetricDefinitionItem(activeMetric, scopeRows.length === 2),
+      "</div>",
+      "</div>",
+      "</section>",
+      '<section class="metric-base-data-panel">',
+      '<div class="base-data-section-head"><h3>基础数据</h3><p>查看构成当前指标结果的来源记录，可按关键字和状态筛选。</p></div>',
+      '<div class="base-data-toolbar">',
+      '<label class="base-data-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>',
+      '<input id="baseDataKeyword" type="search" placeholder="搜索编号、项目、业务组或负责人" autocomplete="off"></label>',
+      '<label class="base-data-filter"><span>数据状态</span><select class="form-select" id="baseDataStatus">',
+      '<option value="all">全部状态</option><option value="normal">正常</option><option value="abnormal">异常</option>',
+      "</select></label>",
+      '<button type="button" class="ghost-btn base-data-reset" id="baseDataReset">',
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M8 11v6M12 11v6M16 11v6M6 7l1 14h10l1-14"/></svg><span>清空筛选</span></button>',
+      '<button type="button" class="secondary-btn base-data-export" id="drawerExportButton">',
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M5 19h14"/></svg>',
+      '<span id="drawerExportButtonLabel">导出明细</span></button>',
+      "</div>",
+      '<div class="base-data-table-wrap"><table class="base-data-table"><colgroup>',
+      '<col class="base-data-col-code"><col class="base-data-col-project"><col class="base-data-col-group">',
+      '<col class="base-data-col-owner"><col class="base-data-col-result"><col class="base-data-col-status">',
+      '<col class="base-data-col-date"></colgroup><thead><tr>',
+      "<th>数据编号</th><th>项目或业务事项</th><th>业务组</th><th>负责人</th><th>本期结果</th><th>指标状态</th><th>统计日期</th>",
+      '</tr></thead><tbody id="baseDataTableBody"></tbody></table></div>',
+      '<div class="app-pagination hidden base-data-pagination" id="baseDataPagination" aria-label="基础数据分页"></div>',
+      "</section></div>"
+    ].join("");
+    baseDataPagination = window.AppPagination.create({
+      container: $("baseDataPagination"),
+      variant: "table",
+      itemLabel: "条",
+      onChange: renderBaseDataTable
+    });
+    renderBaseDataTable();
   }
 
   function openMetricDrawer(metricId) {
     const metric = METRICS.find((item) => item.id === Number(metricId));
     if (!metric) return;
-    const role = getActiveRole();
     activeMetric = metric;
-    $("metricDrawerTitle").textContent = metric.name;
-    $("metricDrawerSubtitle").textContent =
-      role.label + "视图 · " + metric.direction + " · " + metric.scope + " · " + metric.period + "检视";
-    const rows = buildDetailRows(metric);
-    $("metricDrawerBody").innerHTML = [
-      '<div class="drawer-metric-summary">',
-      '<div class="drawer-stat"><span>当前值</span><strong>',
-      escapeHTML(metric.display),
-      "</strong></div>",
-      '<div class="drawer-stat"><span>目标值</span><strong>',
-      escapeHTML(metric.targetDisplay),
-      "</strong></div>",
-      '<div class="drawer-stat"><span>指标状态</span><strong>',
-      STATUS_LABELS[metric.status],
-      "</strong></div>",
-      "</div>",
-      renderMetricDefinitionSections(metric),
-      '<div class="drawer-section"><h3>',
-      escapeHTML(role.detailLabel),
-      '</h3><table class="detail-table"><thead><tr><th>组织范围</th><th>当前结果</th><th>状态</th><th>负责人</th></tr></thead><tbody>',
-      rows.map((row) => (
-        "<tr><td>" +
-        row.map((cell) => escapeHTML(cell)).join("</td><td>") +
-        "</td></tr>"
-      )).join(""),
-      "</tbody></table></div>",
-      '<div class="drawer-section"><h3>责任与检视</h3><p class="drawer-definition">指标责任人：',
-      escapeHTML(metric.owner),
-      "；当前角色视图：",
-      escapeHTML(role.label),
-      "；检视周期：",
-      escapeHTML(metric.period),
-      "。当前页面展示原型示例数据，后续连接具体业务基础数据与异常处理流程。</p></div>"
-    ].join("");
+    baseDataRecords = [];
+    renderMetricDrawer();
     $("metricDrawerMask").classList.remove("hidden");
     $("metricDrawer").classList.remove("hidden");
     document.body.style.overflow = "hidden";
   }
 
   function closeMetricDrawer() {
+    destroyBaseDataPagination();
     $("metricDrawerMask").classList.add("hidden");
     $("metricDrawer").classList.add("hidden");
     document.body.style.overflow = "";
     activeMetric = null;
+    baseDataRecords = [];
+    baseDataKeyword = "";
+    baseDataStatus = "all";
+  }
+
+  async function exportActiveMetric() {
+    if (!activeMetric) return;
+    if (!window.ExcelJS || !window.AppExcelExport) {
+      window.showToast("Excel 导出组件加载失败，请刷新页面后重试", "error");
+      return;
+    }
+    const exportButton = $("drawerExportButton");
+    if (exportButton.disabled) return;
+    exportButton.disabled = true;
+    exportButton.setAttribute("aria-busy", "true");
+    $("drawerExportButtonLabel").textContent = "导出中…";
+    try {
+      const records = filteredBaseDataRecords();
+      if (!records.length) {
+        window.showToast("当前筛选条件下没有可导出的基础数据", "error");
+        return;
+      }
+      const role = getActiveRole();
+      const workbook = window.AppExcelExport.createWorkbook({
+        subject: activeMetric.name + "基础数据",
+        title: activeMetric.name + "【" + getCurrentPeriodLabel() + "】"
+      });
+      window.AppExcelExport.appendStyledSheet(workbook, "指标信息", {
+        title: activeMetric.name + "指标信息",
+        metadata: [
+          ["当前角色", role.label],
+          ["统计周期", getCurrentPeriodLabel()],
+          ["工作方向", activeMetric.direction],
+          ["业务范围", activeMetric.scope],
+          ["责任人", activeMetric.owner],
+          ["导出时间", new Date().toLocaleString("zh-CN", { hour12: false })]
+        ],
+        headers: ["项目", "内容"],
+        rows: [
+          ["当前值", activeMetric.display],
+          ["目标值", activeMetric.targetDisplay],
+          ["完成进度", activeMetric.progress + "%"],
+          ["指标状态", STATUS_LABELS[activeMetric.status]],
+          ["计算逻辑", activeMetric.calculation || "-"],
+          ["指标说明", activeMetric.definition || "-"]
+        ],
+        widths: [18, 64]
+      });
+      window.AppExcelExport.appendStyledSheet(workbook, "基础数据", {
+        title: activeMetric.name + "基础数据",
+        metadata: [
+          ["当前角色", role.label],
+          ["统计周期", getCurrentPeriodLabel()],
+          ["关键字", baseDataKeyword || "全部"],
+          ["指标状态", baseDataStatus !== "all" ? STATUS_LABELS[baseDataStatus] : "全部"],
+          ["记录数量", records.length + " 条"]
+        ],
+        headers: ["数据编号", "项目或业务事项", "业务组", "负责人", "本期结果", "指标状态", "统计日期"],
+        rows: records.map((record) => [
+          record.id,
+          record.project,
+          record.group,
+          record.owner,
+          record.value,
+          STATUS_LABELS[record.status],
+          record.date
+        ]),
+        widths: [24, 34, 18, 12, 16, 13, 15]
+      });
+      const fileName = window.AppExcelExport.safeFileName(
+        activeMetric.name + "明细【" + role.label + "_" + getCurrentPeriodLabel() + "】.xlsx"
+      );
+      await window.AppExcelExport.downloadWorkbook(workbook, fileName);
+    } catch (error) {
+      console.error("Metric detail export failed", error);
+      window.showToast("指标明细导出失败，请稍后重试", "error");
+    } finally {
+      exportButton.disabled = false;
+      exportButton.removeAttribute("aria-busy");
+      $("drawerExportButtonLabel").textContent = "导出明细";
+    }
   }
 
   function resetMetricFilters(focusSearch) {
@@ -739,7 +972,6 @@
       metricPagination.reset();
       closeMetricDrawer();
       renderDashboard();
-      window.showToast("已切换为：" + getActiveRole().label + "视图");
     });
 
     $("periodTypeTabs").addEventListener("click", (event) => {
@@ -750,14 +982,12 @@
       metricPagination.reset();
       closeMetricDrawer();
       renderDashboard();
-      window.showToast("已切换为：" + activePeriodType + "指标");
     });
 
     $("periodValueSelect").addEventListener("change", (event) => {
       selectedPeriods[activePeriodType] = event.target.value;
       metricPagination.reset();
       renderDashboard();
-      window.showToast("统计周期已切换为：" + getCurrentPeriodLabel());
     });
 
     $("indicatorTabs").addEventListener("click", (event) => {
@@ -807,16 +1037,36 @@
       if (button) openMetricDrawer(button.dataset.metricId);
     });
 
-    [$("closeMetricDrawer"), $("drawerCloseButton"), $("metricDrawerMask")].forEach((element) => {
+    [$("closeMetricDrawer"), $("metricDrawerMask")].forEach((element) => {
       element.addEventListener("click", closeMetricDrawer);
     });
 
-    $("drawerExportButton").addEventListener("click", () => {
-      window.showToast(activeMetric ? "正在导出“" + activeMetric.name + "”明细（原型演示）" : "正在导出明细");
+    $("metricDrawerBody").addEventListener("input", (event) => {
+      if (event.target.id !== "baseDataKeyword" || !baseDataPagination) return;
+      baseDataKeyword = event.target.value;
+      baseDataPagination.reset();
+      renderBaseDataTable();
     });
 
-    $("drawerDetailButton").addEventListener("click", () => {
-      window.showToast("基础数据明细页将在该指标页面设计时继续完善");
+    $("metricDrawerBody").addEventListener("change", (event) => {
+      if (event.target.id !== "baseDataStatus" || !baseDataPagination) return;
+      baseDataStatus = event.target.value;
+      baseDataPagination.reset();
+      renderBaseDataTable();
+    });
+
+    $("metricDrawerBody").addEventListener("click", (event) => {
+      if (event.target.closest("#drawerExportButton")) {
+        exportActiveMetric();
+        return;
+      }
+      if (!event.target.closest("#baseDataReset") || !baseDataPagination) return;
+      baseDataKeyword = "";
+      baseDataStatus = "all";
+      $("baseDataKeyword").value = "";
+      $("baseDataStatus").value = "all";
+      baseDataPagination.reset();
+      renderBaseDataTable();
     });
 
     document.addEventListener("keydown", (event) => {

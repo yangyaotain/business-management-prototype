@@ -10,7 +10,8 @@
       title: "工作台",
       direct: true,
       actions: [
-        ["menu.dashboard.view", "查看"]
+        ["menu.dashboard.detail", "查看指标详情"],
+        ["menu.dashboard.exportDetail", "导出指标明细"]
       ],
       menus: []
     },
@@ -19,17 +20,19 @@
       scope: "business",
       title: "经营管理",
       menus: [
-        menu("business.efficiency", "人效看板", [
-          ["business.efficiency.view", "查看"]
+        menu("business.efficiency", "人效看板", []),
+        menu("business.operation", "运营看板", []),
+        menu("business.reports", "数据报表", [
+          ["business.reports.detail", "查看指标明细"],
+          ["business.reports.exportData", "导出报表数据"],
+          ["business.reports.exportDetail", "导出明细"]
         ]),
-        menu("business.operation", "运营看板", [
-          ["business.operation.view", "查看"]
-        ]),
-        menu("business.reports", "报表报告", [
-          ["business.reports.view", "查看"]
+        menu("business.reportDocuments", "数据报告", [
+          ["business.reportDocuments.preview", "预览报告"],
+          ["business.reportDocuments.export", "导出报告"]
         ]),
         menu("business.customerEvaluation", "客户评价", [
-          ["business.customerEvaluation.view", "查看"]
+          ["business.customerEvaluation.detail", "查看评价详情"]
         ])
       ]
     },
@@ -39,10 +42,14 @@
       title: "专项管理",
       menus: [
         menu("special.list", "专项工作", [
-          ["special.list.view", "查看"]
+          ["special.list.detail", "查看专项详情"],
+          ["special.list.create", "新建专项"],
+          ["special.list.edit", "编辑专项"],
+          ["special.list.progress", "填报进度"],
+          ["special.list.changeStatus", "调整状态"]
         ]),
         menu("special.results", "结果看板", [
-          ["special.results.view", "查看"]
+          ["special.results.detail", "查看专项详情"]
         ])
       ]
     },
@@ -52,7 +59,9 @@
       title: "绩效看板",
       direct: true,
       actions: [
-        ["menu.performance.view", "查看"]
+        ["menu.performance.detail", "查看指标详情"],
+        ["menu.performance.configure", "设置绩效指标"],
+        ["menu.performance.adjustTarget", "调整目标"]
       ],
       menus: []
     },
@@ -62,17 +71,21 @@
       title: "系统管理",
       menus: [
         menu("system.users", "用户管理", [
-          ["system.users.search", "查询"],
+          ["system.users.view", "查看用户"],
           ["system.users.create", "新增用户"],
           ["system.users.edit", "编辑用户"],
+          ["system.users.import", "导入用户"],
+          ["system.users.export", "导出用户"],
           ["system.users.resetPassword", "重置密码"],
           ["system.users.toggleStatus", "启用 / 禁用"],
-          ["system.users.delete", "删除用户"]
+          ["system.users.delete", "删除用户"],
+          ["system.users.orgCreate", "新增子组织"],
+          ["system.users.orgRename", "重命名组织"],
+          ["system.users.orgDelete", "删除组织"]
         ]),
         menu("system.roles", "角色管理", [
-          ["system.roles.view", "查看"],
           ["system.roles.create", "新增角色"],
-          ["system.roles.rename", "重命名"],
+          ["system.roles.rename", "重命名角色"],
           ["system.roles.delete", "删除角色"],
           ["system.roles.permission", "配置功能权限"]
         ])
@@ -83,7 +96,7 @@
   const functionBlocks = [
     {
       id: "block.menu",
-      title: "功能菜单",
+      title: "功能菜单与功能按钮",
       children: functionGroups
     }
   ];
@@ -100,10 +113,13 @@
   const qualityReviewFunctionIds = permissionIds([
     "menu.dashboard",
     "business.reports",
+    "business.reportDocuments",
     "business.customerEvaluation",
-    "special.results",
-    "menu.performance"
-  ]);
+    "special.results"
+  ]).concat(menuPermissionIds(
+    "menu.performance",
+    ["menu.performance.detail"]
+  ));
 
   let roleSequence = 6;
   let roles = [
@@ -122,22 +138,33 @@
   }
 
   function functionGroupIds(group) {
+    if (group.direct) {
+      return [
+        group.id,
+        ...(group.actions || []).map((action) => action[0])
+      ];
+    }
     return [
-      group.id,
-      ...(group.actions || []).map((action) => action[0]),
       ...(group.menus || []).flatMap((item) => [item.id, ...item.actions.map((action) => action[0])])
     ];
   }
 
   function functionBlockIds(block) {
-    return [
-      block.id,
-      ...block.children.flatMap((group) => functionGroupIds(group))
-    ];
+    return block.children.flatMap((group) => functionGroupIds(group));
   }
 
   function permissionIds(ids) {
     return Array.from(new Set(ids.flatMap((id) => findFunctionBranchIds(id))));
+  }
+
+  function menuPermissionIds(menuId, actionIds) {
+    const node = findFunctionNode(menuId);
+    if (!node || node.kind !== "menu") return [];
+    const validActionIds = new Set(node.menu.actions.map((action) => action[0]));
+    const selectedActionIds = Array.isArray(actionIds)
+      ? actionIds.filter((actionId) => validActionIds.has(actionId))
+      : Array.from(validActionIds);
+    return [menuId, ...selectedActionIds];
   }
 
   function makeRole(id, name, description, users, functions) {
@@ -209,6 +236,7 @@
     if (!body) return;
     const role = currentRole();
     body.innerHTML = role ? renderFunction(role) : "";
+    if (role) syncFunctionCheckboxStates(role, body);
   }
 
   function renderFunction(role) {
@@ -220,6 +248,7 @@
         "<strong>" + escapeHTML(block.title) + "</strong>",
         "</label>",
         '<div class="function-block-body">',
+        '<div class="function-column-head"><span>功能菜单</span><span>功能按钮</span></div>',
         block.children.map((group) => renderFunctionGroup(role, group)).join(""),
         "</div>",
         "</section>"
@@ -250,27 +279,49 @@
   }
 
   function renderFunctionMenu(role, item) {
-    return [
-      '<div class="function-menu-row">',
-      '<label class="function-menu-check">',
-      '<input type="checkbox" data-perm-kind="function" data-perm-id="' + item.id + '"' + (isFunctionChecked(role, item.id) ? " checked" : "") + " />",
-      '<span title="' + escapeHTML(item.name) + '">' + escapeHTML(item.name) + "</span>",
-      "</label>",
-      '<div class="function-action-list">',
-      item.actions.map((action) => [
+    const actionHTML = item.actions.length
+      ? item.actions.map((action) => [
         '<label class="function-action-check">',
         '<input type="checkbox" data-perm-kind="function" data-perm-id="' + action[0] + '"' + (role.functions.has(action[0]) ? " checked" : "") + " />",
         '<span title="' + escapeHTML(action[1]) + '">' + escapeHTML(action[1]) + "</span>",
         "</label>"
-      ].join("")).join(""),
+      ].join("")).join("")
+      : '<span class="function-action-empty">无独立按钮权限</span>';
+    return [
+      '<div class="function-menu-row">',
+      '<label class="function-menu-check">',
+      '<input type="checkbox" data-perm-kind="function" data-perm-id="' + item.id + '"' + (role.functions.has(item.id) ? " checked" : "") + " />",
+      '<span title="' + escapeHTML(item.name) + '">' + escapeHTML(item.name) + "</span>",
+      "</label>",
+      '<div class="function-action-list">',
+      actionHTML,
       "</div>",
       "</div>"
     ].join("");
   }
 
   function isFunctionChecked(role, id) {
+    const node = findFunctionNode(id);
+    if (!node || node.kind === "menu" || node.kind === "action") {
+      return role.functions.has(id);
+    }
     const ids = findFunctionBranchIds(id);
     return ids.length ? ids.every((itemId) => role.functions.has(itemId)) : role.functions.has(id);
+  }
+
+  function syncFunctionCheckboxStates(role, container) {
+    container.querySelectorAll("input[data-perm-kind='function']").forEach((input) => {
+      const id = input.getAttribute("data-perm-id");
+      const node = findFunctionNode(id);
+      if (!node || (node.kind !== "block" && node.kind !== "group")) {
+        input.indeterminate = false;
+        return;
+      }
+      const ids = findFunctionBranchIds(id);
+      const selectedCount = ids.filter((itemId) => role.functions.has(itemId)).length;
+      input.checked = ids.length > 0 && selectedCount === ids.length;
+      input.indeterminate = selectedCount > 0 && selectedCount < ids.length;
+    });
   }
 
   function chevronIconHTML() {
@@ -377,23 +428,52 @@
   }
 
   function updateFunctionPermission(role, id, checked) {
-    const ids = findFunctionBranchIds(id);
-    (ids.length ? ids : [id]).forEach((itemId) => updateSet(role.functions, itemId, checked));
+    const node = findFunctionNode(id);
+    if (!node) return;
+    if (node.kind === "block" || node.kind === "group") {
+      findFunctionBranchIds(id).forEach((itemId) => updateSet(role.functions, itemId, checked));
+      return;
+    }
+    if (node.kind === "menu") {
+      updateSet(role.functions, id, checked);
+      if (!checked) {
+        node.menu.actions.forEach((action) => role.functions.delete(action[0]));
+      }
+      return;
+    }
+    updateSet(role.functions, id, checked);
+    if (checked) role.functions.add(node.menu.id);
+  }
+
+  function findFunctionNode(id) {
+    for (const block of functionBlocks) {
+      if (block.id === id) return { kind: "block", block };
+    }
+    for (const group of functionGroups) {
+      if (group.direct) {
+        if (group.id === id) return { kind: "menu", menu: group };
+        for (const action of group.actions || []) {
+          if (action[0] === id) return { kind: "action", action, menu: group };
+        }
+        continue;
+      }
+      if (group.id === id) return { kind: "group", group };
+      for (const item of group.menus || []) {
+        if (item.id === id) return { kind: "menu", menu: item, group };
+        const action = item.actions.find((itemAction) => itemAction[0] === id);
+        if (action) return { kind: "action", action, menu: item, group };
+      }
+    }
+    return null;
   }
 
   function findFunctionBranchIds(id) {
-    for (const block of functionBlocks) {
-      if (block.id === id) return functionBlockIds(block);
-    }
-    for (const group of functionGroups) {
-      if (group.id === id) return functionGroupIds(group);
-      for (const action of group.actions || []) {
-        if (action[0] === id) return [id];
-      }
-      for (const item of group.menus || []) {
-        if (item.id === id) return [item.id, ...item.actions.map((action) => action[0])];
-        if (item.actions.some((action) => action[0] === id)) return [id];
-      }
+    const node = findFunctionNode(id);
+    if (!node) return [];
+    if (node.kind === "block") return functionBlockIds(node.block);
+    if (node.kind === "group") return functionGroupIds(node.group);
+    if (node.kind === "menu") {
+      return [node.menu.id, ...node.menu.actions.map((action) => action[0])];
     }
     return [id];
   }

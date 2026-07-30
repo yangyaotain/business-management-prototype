@@ -1048,7 +1048,6 @@
       const button = event.target.closest("[data-role-id]");
       if (!button || button.dataset.roleId === state.roleId) return;
       switchRole(button.dataset.roleId);
-      if (window.showToast) window.showToast("已切换为：" + getRole().label + "视角");
     });
 
     $("cePeriodTypeTabs").addEventListener("click", (event) => {
@@ -1057,14 +1056,12 @@
       state.periodType = button.dataset.periodType;
       resetTransientState();
       renderDashboard();
-      if (window.showToast) window.showToast("已切换为：" + state.periodType + "评价");
     });
 
     $("cePeriodValueSelect").addEventListener("change", (event) => {
       state.selectedPeriods[state.periodType] = event.target.value;
       resetTransientState();
       renderDashboard();
-      if (window.showToast) window.showToast("统计周期已切换为：" + getCurrentPeriod().label);
     });
 
     $("ceBusinessFilter").addEventListener("change", (event) => {

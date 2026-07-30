@@ -180,7 +180,8 @@ function checkSharedPagination() {
     "special-list",
     "special-results",
     "customer-evaluation",
-    "reports"
+    "reports",
+    "report-documents"
   ];
   for (const pageName of consumerPages) {
     const pageSource = fs.readFileSync(path.join(projectRoot, "pages", `${pageName}.html`), "utf8");
@@ -198,7 +199,8 @@ function checkSharedPagination() {
     ["performance-dashboard.js", "table", ["performancePagination"]],
     ["special-management.js", "table", ["specialListPagination", "specialResultPagination"]],
     ["customer-evaluation.js", "table", ["ceDetailPagination"]],
-    ["reports.js", "table", ["metricReportPagination", "managedReportPagination", "detailPagination"]]
+    ["reports.js", "table", ["metricReportPagination", "detailPagination"]],
+    ["report-documents.js", "table", ["managedReportPagination"]]
   ];
   for (const [scriptName, variant, mountIds] of consumers) {
     const consumerScript = fs.readFileSync(path.join(projectRoot, "assets", "js", scriptName), "utf8");
@@ -254,8 +256,10 @@ function checkSharedPagination() {
 function checkDashboardMetrics() {
   const dashboardScript = path.join(projectRoot, "assets", "js", "dashboard.js");
   const dashboardPage = path.join(projectRoot, "pages", "dashboard.html");
+  const dashboardStyle = path.join(projectRoot, "assets", "css", "dashboard.css");
   const source = fs.readFileSync(dashboardScript, "utf8");
   const pageSource = fs.readFileSync(dashboardPage, "utf8");
+  const styleSource = fs.readFileSync(dashboardStyle, "utf8");
   const metricBlock = source.match(/const METRIC_SOURCE = \[([\s\S]*?)\n  \];/);
   if (!metricBlock) {
     errors.push("assets/js/dashboard.js: METRIC_SOURCE array not found");
@@ -317,18 +321,73 @@ function checkDashboardMetrics() {
     "function renderMetricFilterControls(",
     "metricPagination.update(metrics)",
     "function resetMetricFilters(",
+    "function renderMetricDrawer(",
+    "function renderMetricDefinitionItem(",
+    "metric-integrated-layout",
+    "metric-overview-card",
+    "metric-basic-grid",
+    "metric-basic-key",
+    "metric-card-action",
+    "base-data-export",
+    "function exportActiveMetric(",
     'id="metricNameQuery"',
     'id="metricStatusFilter"',
     'id="metricFilterReset"',
     'id="metricFilterResultCount"',
     'id="metricPagination"',
+    "../assets/js/excel-export.js",
     "58项业务交付指标"
   ]) {
-    const targetSource = marker.startsWith('id="') || marker.includes("58项")
+    const targetSource = marker.startsWith('id="') || marker.startsWith("../assets/") || marker.includes("58项")
       ? pageSource
       : source;
     if (!targetSource.includes(marker)) {
       errors.push(`dashboard update: required marker missing ${marker}`);
+    }
+  }
+  for (const retiredMarker of [
+    "drawerDetailButton",
+    "renderBaseDataView",
+    "metricDrawerMode",
+    "baseDataResultCount",
+    "renderMetricDefinitionDetails",
+    "renderMetricDefinitionPanel",
+    "metric-definition-details",
+    "detailLabel:",
+    "<details",
+    "<summary"
+  ]) {
+    if (source.includes(retiredMarker) || pageSource.includes(retiredMarker)) {
+      errors.push(`dashboard update: retired nested-detail marker remains ${retiredMarker}`);
+    }
+  }
+  for (const marker of [
+    "width: min(1380px, calc(100vw - 64px))",
+    "grid-template-columns: repeat(4, minmax(0, 1fr))",
+    "table-layout: fixed",
+    "overflow: hidden",
+    "cursor: pointer"
+  ]) {
+    if (!styleSource.includes(marker)) {
+      errors.push(`dashboard detail layout: required marker missing ${marker}`);
+    }
+  }
+  if (styleSource.includes("min-width: 920px")) {
+    errors.push("dashboard detail layout: retired desktop table minimum width remains");
+  }
+  const baseDataCodeRule = styleSource.match(/\.base-data-code\s*\{([^}]*)\}/);
+  if (!baseDataCodeRule || !baseDataCodeRule[1].includes("color: #344054")) {
+    errors.push("dashboard detail layout: base data code must use neutral text color");
+  }
+  for (const retiredStyle of [
+    ".metric-overview-primary",
+    ".metric-overview-secondary",
+    ".metric-scope-section",
+    ".metric-side-title",
+    ".metric-definition-panel"
+  ]) {
+    if (styleSource.includes(retiredStyle)) {
+      errors.push(`dashboard detail layout: retired grouped overview style remains ${retiredStyle}`);
     }
   }
 }
@@ -409,26 +468,113 @@ function checkUnifiedDashboardControls() {
   }
 }
 
-function checkPlaceholderPages() {
-  const expectedPages = ["reports"];
-  const configSource = fs.readFileSync(
-    path.join(projectRoot, "assets", "js", "placeholder.js"),
-    "utf8"
-  );
+function checkReportPageSplit() {
+  const dataReportPagePath = path.join(projectRoot, "pages", "reports.html");
+  const reportDocumentPagePath = path.join(projectRoot, "pages", "report-documents.html");
+  const dataReportScriptPath = path.join(projectRoot, "assets", "js", "reports.js");
+  const reportDocumentScriptPath = path.join(projectRoot, "assets", "js", "report-documents.js");
+  const requiredFiles = [
+    dataReportPagePath,
+    reportDocumentPagePath,
+    dataReportScriptPath,
+    reportDocumentScriptPath
+  ];
+  for (const file of requiredFiles) {
+    if (!fs.existsSync(file)) {
+      errors.push(`${relative(file)}: split report artifact missing`);
+    }
+  }
+  if (!requiredFiles.every((file) => fs.existsSync(file))) return;
 
-  for (const pageKey of expectedPages) {
-    const pagePath = path.join(projectRoot, "pages", `${pageKey}.html`);
-    if (!fs.existsSync(pagePath)) {
-      errors.push(`pages/${pageKey}.html: placeholder page missing`);
-      continue;
+  const dataReportPage = fs.readFileSync(dataReportPagePath, "utf8");
+  const reportDocumentPage = fs.readFileSync(reportDocumentPagePath, "utf8");
+  const dataReportScript = fs.readFileSync(dataReportScriptPath, "utf8");
+  const reportDocumentScript = fs.readFileSync(reportDocumentScriptPath, "utf8");
+  const navigationSource = fs.readFileSync(path.join(projectRoot, "assets", "js", "navigation.js"), "utf8");
+  const roleSource = fs.readFileSync(path.join(projectRoot, "assets", "js", "roles.js"), "utf8");
+
+  for (const marker of [
+    '{ key: "reports", title: "数据报表", href: "reports.html" }',
+    '{ key: "report-documents", title: "数据报告", href: "report-documents.html" }'
+  ]) {
+    if (!navigationSource.includes(marker)) {
+      errors.push(`assets/js/navigation.js: split report menu missing ${marker}`);
     }
-    const pageSource = fs.readFileSync(pagePath, "utf8");
-    if (!pageSource.includes(`data-page="${pageKey}"`)) {
-      errors.push(`pages/${pageKey}.html: data-page mismatch`);
+  }
+  for (const marker of [
+    'menu("business.reports", "数据报表"',
+    'menu("business.reportDocuments", "数据报告"',
+    '"business.reportDocuments"'
+  ]) {
+    if (!roleSource.includes(marker)) {
+      errors.push(`assets/js/roles.js: split report permission missing ${marker}`);
     }
-    const configPattern = new RegExp(`(?:^|\\n)\\s*(?:"${pageKey}"|${pageKey}):\\s*\\{`);
-    if (!configPattern.test(configSource)) {
-      errors.push(`assets/js/placeholder.js: config missing for ${pageKey}`);
+  }
+  for (const marker of [
+    'data-page="reports"',
+    'class="panel dashboard-control-panel',
+    'id="reportPeriodTypeTabs"',
+    'id="exportDataButton"',
+    "../assets/js/reports.js"
+  ]) {
+    if (!dataReportPage.includes(marker)) {
+      errors.push(`pages/reports.html: data-report marker missing ${marker}`);
+    }
+  }
+  for (const retiredMarker of [
+    "reportViewTabs",
+    "dataReportPanel",
+    "dataDocumentPanel",
+    "reportDocumentTypeTabs",
+    "managedReportPagination"
+  ]) {
+    if (dataReportPage.includes(retiredMarker) || dataReportScript.includes(retiredMarker)) {
+      errors.push(`data report split: retired mixed-view marker remains ${retiredMarker}`);
+    }
+  }
+  for (const marker of [
+    'data-page="report-documents"',
+    'id="reportDocumentRoleTabs"',
+    'id="reportDocumentTypeTabs"',
+    'id="monthlyReportTab"',
+    'id="quarterlyReportTab"',
+    'id="managedReportPagination"',
+    "../assets/js/report-documents.js"
+  ]) {
+    if (!reportDocumentPage.includes(marker)) {
+      errors.push(`pages/report-documents.html: data-document marker missing ${marker}`);
+    }
+  }
+  for (const forbiddenMarker of [
+    "reportPeriodTypeTabs",
+    "reportPeriodSelect",
+    "reportBusinessTypeSelect",
+    "exportDataButton"
+  ]) {
+    if (reportDocumentPage.includes(forbiddenMarker)) {
+      errors.push(`pages/report-documents.html: data-report control leaked into data documents ${forbiddenMarker}`);
+    }
+  }
+  for (const marker of [
+    'reportType: "月度"',
+    'report.type === state.reportType',
+    "月度报告名称",
+    "报告月份",
+    "季度报告名称",
+    "报告季度",
+    "reportPagination = window.AppPagination.create"
+  ]) {
+    if (!reportDocumentScript.includes(marker)) {
+      errors.push(`assets/js/report-documents.js: required marker missing ${marker}`);
+    }
+  }
+
+  for (const legacyFile of [
+    path.join(projectRoot, "assets", "js", "placeholder.js"),
+    path.join(projectRoot, "assets", "css", "placeholder.css")
+  ]) {
+    if (fs.existsSync(legacyFile)) {
+      errors.push(`${relative(legacyFile)}: retired placeholder artifact remains`);
     }
   }
 }
@@ -619,7 +765,6 @@ function checkOperationDashboard() {
     'id="operationPeriodTypeTabs"',
     'id="operationPeriodSelect"',
     'id="operationBusinessTypeSelect"',
-    'id="operationScopePath"',
     'id="operationScopePanelBody"',
     "业务组运营概览",
     'id="operationMetricGrid"',
@@ -936,12 +1081,28 @@ function checkSystemManagementPages() {
     "reset-password",
     "umDrawer",
     "umPager",
-    "data-role-option"
+    "data-role-option",
+    "umImportModal",
+    "umImportSummary",
+    "function readImportFile(",
+    "function exportUsers(",
+    "umImportDuplicateMode",
+    "function importRowAction(",
+    "重复跳过",
+    "重复覆盖",
+    "const USER_FILE_HEADERS",
+    "function createUserFileWorkbook(",
+    "../assets/js/excel-export.js",
+    "部门负责人"
   ];
   for (const marker of requiredUserFeatures) {
     if (!usersSource.includes(marker)) {
       errors.push(`user management: reference feature missing ${marker}`);
     }
+  }
+  const sharedUserWorkbookCalls = usersSource.match(/createUserFileWorkbook\(/g) || [];
+  if (sharedUserWorkbookCalls.length < 3) {
+    errors.push("user management: import template and user export must share createUserFileWorkbook");
   }
 
   const rolesSource = [
@@ -953,11 +1114,74 @@ function checkSystemManagementPages() {
     "roleDeleteModal",
     "functionBlocks",
     "function-permission-list",
-    "savePermissionBtn"
+    "savePermissionBtn",
+    "功能菜单与功能按钮",
+    "function-column-head",
+    "无独立按钮权限",
+    "function syncFunctionCheckboxStates(",
+    "function findFunctionNode("
   ];
   for (const marker of requiredRoleFeatures) {
     if (!rolesSource.includes(marker)) {
       errors.push(`role management: reference feature missing ${marker}`);
+    }
+  }
+  const requiredRolePermissions = [
+    ["menu.dashboard.detail", "查看指标详情"],
+    ["menu.dashboard.exportDetail", "导出指标明细"],
+    ["business.efficiency", "人效看板"],
+    ["business.operation", "运营看板"],
+    ["business.reports.detail", "查看指标明细"],
+    ["business.reports.exportData", "导出报表数据"],
+    ["business.reports.exportDetail", "导出明细"],
+    ["business.reportDocuments.preview", "预览报告"],
+    ["business.reportDocuments.export", "导出报告"],
+    ["business.customerEvaluation.detail", "查看评价详情"],
+    ["special.list.detail", "查看专项详情"],
+    ["special.list.create", "新建专项"],
+    ["special.list.edit", "编辑专项"],
+    ["special.list.progress", "填报进度"],
+    ["special.list.changeStatus", "调整状态"],
+    ["special.results.detail", "查看专项详情"],
+    ["menu.performance.detail", "查看指标详情"],
+    ["menu.performance.configure", "设置绩效指标"],
+    ["menu.performance.adjustTarget", "调整目标"],
+    ["system.users.view", "查看用户"],
+    ["system.users.create", "新增用户"],
+    ["system.users.edit", "编辑用户"],
+    ["system.users.import", "导入用户"],
+    ["system.users.export", "导出用户"],
+    ["system.users.resetPassword", "重置密码"],
+    ["system.users.toggleStatus", "启用 / 禁用"],
+    ["system.users.delete", "删除用户"],
+    ["system.users.orgCreate", "新增子组织"],
+    ["system.users.orgRename", "重命名组织"],
+    ["system.users.orgDelete", "删除组织"],
+    ["system.roles.create", "新增角色"],
+    ["system.roles.rename", "重命名角色"],
+    ["system.roles.delete", "删除角色"],
+    ["system.roles.permission", "配置功能权限"]
+  ];
+  for (const [permissionId, permissionLabel] of requiredRolePermissions) {
+    if (!rolesSource.includes(permissionId) || !rolesSource.includes(permissionLabel)) {
+      errors.push(`role management: latest menu/button permission missing ${permissionId} ${permissionLabel}`);
+    }
+  }
+  for (const retiredPermission of [
+    '"menu.dashboard.view"',
+    '"business.efficiency.view"',
+    '"business.operation.view"',
+    '"business.reports.view"',
+    '"business.reportDocuments.view"',
+    '"business.customerEvaluation.view"',
+    '"special.list.view"',
+    '"special.results.view"',
+    '"menu.performance.view"',
+    '"system.users.search"',
+    '"system.roles.view"'
+  ]) {
+    if (rolesSource.includes(retiredPermission)) {
+      errors.push(`role management: retired generic permission remains ${retiredPermission}`);
     }
   }
   const forbiddenRoleFeatures = [
@@ -996,7 +1220,7 @@ const cssCount = checkCSS();
 checkSharedPagination();
 checkDashboardMetrics();
 checkUnifiedDashboardControls();
-checkPlaceholderPages();
+checkReportPageSplit();
 checkSpecialManagement();
 checkMessageCenter();
 checkOperationDashboard();
@@ -1032,4 +1256,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log(`Static validation passed: ${htmlCount} HTML files, ${cssCount} CSS files, 1 shared card 9/18/27 and table 10/20/50 pagination component, 58 metrics, 4 workbench roles, metric name/status filters, 1 efficiency dashboard, 1 paginated operation dashboard, 1 customer evaluation analysis, 1 performance dashboard, 1 special management module, 1 shared message center, 1 placeholder page, 3 system pages.`);
+console.log(`Static validation passed: ${htmlCount} HTML files, ${cssCount} CSS files, 1 shared card 9/18/27 and table 10/20/50 pagination component, 58 metrics, 4 workbench roles, metric name/status filters, 1 efficiency dashboard, 1 paginated operation dashboard, 1 customer evaluation analysis, 1 performance dashboard, 1 special management module, 1 shared message center, 2 split report pages, 3 system pages.`);

@@ -32,6 +32,10 @@
   min-width: 210px;
 }
 
+.dashboard-control-panel.report-document-mode .dashboard-role-row {
+  border-bottom: 0;
+}
+
 .report-summary-card::after {
   display: none;
 }
@@ -129,23 +133,94 @@
   padding: 16px 18px 20px;
 }
 
-.report-management-toolbar {
+.report-document-panel {
+  overflow: hidden;
+}
+
+.report-document-head {
+  min-height: 70px;
+}
+
+.report-document-controls {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.report-document-type-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.report-document-type-tab {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 11px;
+  color: #667085;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  font-size: var(--font-size-body);
+  font-weight: 700;
+  transition: color 0.16s ease, background 0.16s ease, border-color 0.16s ease;
+}
+
+.report-document-type-tab:hover,
+.report-document-type-tab.active {
+  color: var(--primary);
+  background: var(--primary-soft);
+  border-color: var(--primary-border);
+}
+
+.report-document-type-tab:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.report-document-type-tab svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.report-document-type-tab em {
+  min-width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  color: inherit;
+  background: rgba(var(--primary-rgb), 0.08);
+  border-radius: 999px;
+  font-size: var(--font-size-caption);
+  font-style: normal;
+}
+
+.report-management-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
   gap: 14px;
   margin-bottom: 12px;
 }
 
-.report-management-toolbar > span {
-  color: #667085;
-  font-size: var(--font-size-secondary);
-  font-weight: 700;
+.report-document-controls .report-management-toolbar {
+  margin-bottom: 0;
 }
 
 .report-management-search {
   position: relative;
-  width: 320px;
+  width: min(420px, 100%);
 }
 
 .report-management-search svg {
@@ -488,6 +563,7 @@
 /* Typography normalization for the minified report module loaded before this file. */
 .report-field > span,
 .compare-switch button,
+.report-document-type-tab,
 .report-summary-label,
 .report-table th,
 .report-section-toolbar p,
@@ -513,6 +589,24 @@
 }
 
 @media (max-width: 900px) {
+  .report-document-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .report-document-type-tabs {
+    width: 100%;
+  }
+
+  .report-document-type-tab {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .report-management-search {
+    flex: 1;
+  }
+
   .detail-query-bar {
     grid-template-columns: minmax(0, 1fr) 140px;
   }

@@ -1550,7 +1550,6 @@
     $("performanceStatusSelect").value = "all";
     closeDetail();
     renderAll();
-    notify("已进入：" + group.name);
   }
 
   function openMember(memberId) {
@@ -1563,7 +1562,6 @@
     $("performanceStatusSelect").value = "all";
     closeDetail();
     renderAll();
-    notify("已进入：" + person.name + "个人绩效视图");
   }
 
   function navigateToLevel(level) {
@@ -1606,7 +1604,6 @@
     closeDetail();
     closeConfig();
     renderAll();
-    notify("已切换为：" + role.label + "视图");
   }
 
   function bindEvents() {
@@ -1623,7 +1620,6 @@
       performancePagination.reset();
       closeDetail();
       renderAll();
-      notify("已切换为：" + activePeriodType + "绩效数据");
     });
 
     $("performancePeriodSelect").addEventListener("change", (event) => {
@@ -1631,7 +1627,6 @@
       performancePagination.reset();
       closeDetail();
       renderAll();
-      notify("统计周期已切换为：" + getPeriodLabel());
     });
 
     $("performanceGroupSelect").addEventListener("change", (event) => {
@@ -1646,8 +1641,6 @@
       }
       performancePagination.reset();
       renderAll();
-      const group = getGroup(activeGroupId);
-      notify(activeLevel === "department" ? "已切换为部门绩效视图" : "已切换为：" + group.name);
     });
 
     $("performanceCategorySelect").addEventListener("change", (event) => {

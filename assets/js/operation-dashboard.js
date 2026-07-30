@@ -594,9 +594,7 @@
     $("topbarPageSubtitle").textContent = role.label + " · " + scopeLabel + "运营视图";
     $("operationPageTitle").textContent = title;
     $("operationPageDescription").textContent = description;
-    $("operationScopeLabel").textContent = scopeLabel;
     $("dataCutoffText").textContent = periodLabel;
-    renderScopePath();
     renderPageActions();
   }
 
@@ -605,52 +603,6 @@
       (activeLevel === "group" && activeRoleId === "departmentHead") ||
       (activeLevel === "person" && activeRoleId !== "member");
     $("operationBackButton").classList.toggle("hidden", !canBack);
-  }
-
-  function renderScopePath() {
-    const group = getActiveGroup();
-    const person = getActiveMember();
-    const parts = [];
-
-    if (activeRoleId === "departmentHead") {
-      if (activeLevel === "department") {
-        parts.push(scopeCurrent("代理业务部"));
-      } else {
-        parts.push(scopeLink("department", "代理业务部"));
-      }
-    }
-
-    if (activeLevel === "group" && group) {
-      parts.push(scopeCurrent(group.name));
-    } else if (activeLevel === "person" && group) {
-      if (activeRoleId === "member") {
-        parts.push(scopeCurrent(person ? person.name : "本人"));
-      } else {
-        parts.push(scopeLink("group", group.name));
-        parts.push(scopeCurrent(person ? person.name : "个人"));
-      }
-    } else if (activeRoleId === "groupLeader" && group) {
-      parts.push(scopeCurrent(group.name));
-    }
-
-    $("operationScopePath").innerHTML = parts.map((part, index) => (
-      index ? '<span class="operation-scope-separator">/</span>' + part : part
-    )).join("");
-  }
-
-  function scopeLink(action, label) {
-    return [
-      '<button type="button" class="operation-scope-link" data-scope-action="',
-      action,
-      '">',
-      ICONS.back,
-      escapeHTML(label),
-      "</button>"
-    ].join("");
-  }
-
-  function scopeCurrent(label) {
-    return '<span class="operation-scope-current">' + escapeHTML(label) + "</span>";
   }
 
   function renderSummary() {
@@ -1036,7 +988,6 @@
       activeCategory = "all";
       operationMetricPagination.reset();
       renderAll();
-      if (window.showToast) window.showToast("业务类型已切换为：" + (activeBusinessType === "all" ? "全部业务" : getBusinessTypeLabel() + "业务"));
     });
 
     $("operationPeriodTypeTabs").addEventListener("click", (event) => {
@@ -1045,27 +996,10 @@
       activePeriodType = button.dataset.periodType;
       operationMetricPagination.reset();
       renderAll();
-      if (window.showToast) window.showToast("已切换为：" + activePeriodType + "运营数据");
     });
 
     $("operationPeriodSelect").addEventListener("change", (event) => {
       selectedPeriods[activePeriodType] = event.target.value;
-      operationMetricPagination.reset();
-      renderAll();
-      if (window.showToast) window.showToast("统计周期已切换为：" + getCurrentPeriodOption().label);
-    });
-
-    $("operationScopePath").addEventListener("click", (event) => {
-      const button = event.target.closest("[data-scope-action]");
-      if (!button) return;
-      if (button.dataset.scopeAction === "department" && activeRoleId === "departmentHead") {
-        activeLevel = "department";
-        activeGroupId = null;
-        activeMemberId = null;
-      } else if (button.dataset.scopeAction === "group" && activeGroupId && canOpenGroup(activeGroupId)) {
-        activeLevel = "group";
-        activeMemberId = null;
-      }
       operationMetricPagination.reset();
       renderAll();
     });

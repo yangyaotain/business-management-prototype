@@ -221,6 +221,16 @@
   padding: 10px 14px 14px;
 }
 
+.function-column-head {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 18px;
+  padding: 0 0 8px;
+  color: var(--muted);
+  font-size: var(--font-size-secondary);
+  font-weight: 700;
+}
+
 .function-group {
   padding: 6px 0 8px;
 }
@@ -298,6 +308,13 @@
   display: grid;
   grid-template-columns: repeat(6, minmax(112px, 1fr));
   gap: 9px 16px;
+}
+
+.function-action-empty {
+  grid-column: 1 / -1;
+  align-self: center;
+  color: var(--muted);
+  font-size: var(--font-size-secondary);
 }
 
 .function-block-head input,
@@ -399,6 +416,10 @@
   }
 
   .function-menu-row {
+    grid-template-columns: 160px minmax(0, 1fr);
+  }
+
+  .function-column-head {
     grid-template-columns: 160px minmax(0, 1fr);
   }
 

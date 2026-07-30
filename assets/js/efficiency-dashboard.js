@@ -1129,7 +1129,6 @@
       state.periodType = button.dataset.periodType;
       state.periodIndex = state.selectedPeriodIndexes[state.periodType];
       renderAll();
-      if (window.showToast) window.showToast("已切换为：" + state.periodType + "人效数据");
     });
 
     $("efficiencyPeriodSelect").addEventListener("change", (event) => {

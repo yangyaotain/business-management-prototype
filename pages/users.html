@@ -61,8 +61,14 @@
               <div class="um-toolbar">
                 <div class="um-actions">
                   <button type="button" class="primary-btn" data-act="create">新增</button>
-                  <button type="button" class="secondary-btn" data-act="import">导入</button>
-                  <button type="button" class="secondary-btn" data-act="export">导出</button>
+                  <button type="button" class="secondary-btn" data-act="import">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21V9m0 0-4 4m4-4 4 4"/><path d="M5 5h14"/></svg>
+                    <span>导入</span>
+                  </button>
+                  <button type="button" class="secondary-btn" data-act="export">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M5 19h14"/></svg>
+                    <span data-export-label>导出</span>
+                  </button>
                   <button type="button" class="danger-btn subtle" data-act="batch-delete">删除</button>
                 </div>
                 <div class="um-filter">
@@ -75,8 +81,10 @@
                   <input id="umNameFilter" type="text" placeholder="姓名" />
                   <select id="umRoleFilter">
                     <option value="">全部角色</option>
-                    <option value="业务分析师">业务分析师</option>
-                    <option value="运营管理员">运营管理员</option>
+                    <option value="项目经理">项目经理</option>
+                    <option value="业务组长">业务组长</option>
+                    <option value="质量审核">质量审核</option>
+                    <option value="部门负责人">部门负责人</option>
                     <option value="系统管理员">系统管理员</option>
                   </select>
                   <button type="button" class="ghost-btn" data-act="reset-filter">重置</button>
@@ -111,13 +119,15 @@
   </div>
 
   <div class="um-drawer-mask hidden" id="umDrawerMask"></div>
-  <aside class="um-drawer hidden" id="umDrawer" aria-hidden="true">
+  <aside class="um-drawer hidden" id="umDrawer" role="dialog" aria-modal="true" aria-labelledby="umDrawerTitle" aria-hidden="true">
     <header class="um-drawer-head">
       <div>
         <h3 id="umDrawerTitle">用户详情</h3>
         <p id="umDrawerSubtitle">查看与维护用户信息</p>
       </div>
-      <button type="button" class="um-drawer-close" data-act="close-drawer" aria-label="关闭">×</button>
+      <button type="button" class="um-drawer-close" data-act="close-drawer" aria-label="关闭">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+      </button>
     </header>
     <div class="um-drawer-body" id="umDrawerBody"></div>
     <footer class="um-drawer-foot" id="umDrawerFoot"></footer>
@@ -155,9 +165,117 @@
     </div>
   </div>
 
+  <div class="modal-mask hidden" id="umImportMask"></div>
+  <div class="modal um-import-modal hidden" id="umImportModal" role="dialog" aria-modal="true" aria-labelledby="umImportTitle">
+    <div class="modal-head">
+      <div>
+        <h3 id="umImportTitle">导入用户</h3>
+        <p>按模板整理用户信息，上传后完成数据校验，再确认写入当前用户列表。</p>
+      </div>
+      <button class="modal-close" type="button" data-act="close-import" aria-label="关闭导入弹窗">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body um-import-body">
+      <div class="um-import-setup" id="umImportSetup">
+        <div class="um-import-actions">
+          <div class="um-import-step-copy">
+            <span class="um-import-step-index">1</span>
+            <div>
+              <strong>下载并填写导入模板</strong>
+              <p>导入、导出文件使用相同字段和顺序，导出的用户清单可继续用于导入。</p>
+            </div>
+          </div>
+          <button type="button" class="secondary-btn" data-act="download-import-template">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M5 19h14"/></svg>
+            <span>下载导入模板</span>
+          </button>
+        </div>
+
+        <div class="um-import-upload-panel">
+          <div class="um-import-upload-head">
+            <div class="um-import-step-copy">
+              <span class="um-import-step-index">2</span>
+              <div>
+                <strong>上传填写后的模板</strong>
+                <p>系统会先解析并展示校验汇总，不会直接写入用户列表。</p>
+              </div>
+            </div>
+            <button type="button" class="primary-btn" data-act="select-import-file">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21V9m0 0-4 4m4-4 4 4"/><path d="M5 5h14"/></svg>
+              <span>选择 Excel 文件</span>
+            </button>
+          </div>
+
+          <div class="um-import-dropzone" id="umImportDropzone" tabindex="0" role="button" aria-label="选择或拖入用户导入文件">
+            <span class="um-import-drop-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0-4 4m4-4 4 4"/><path d="M5 13v6h14v-6"/></svg>
+            </span>
+            <strong>将 Excel 文件拖放到此处</strong>
+            <span>也可以点击此区域选择文件，文件仅在浏览器本地解析。</span>
+            <div class="um-import-file-rules" aria-label="文件要求">
+              <span>仅支持 .xlsx</span>
+              <span>文件不超过 10 MB</span>
+            </div>
+          </div>
+
+          <div class="um-import-duplicate-policy">
+            <div class="um-import-policy-copy">
+              <strong>重复账号处理</strong>
+              <span>以账号匹配当前用户；同一文件内的重复账号仍按异常处理。</span>
+            </div>
+            <div class="um-import-policy-options" role="radiogroup" aria-label="重复账号处理方式">
+              <label>
+                <input type="radio" name="umImportDuplicateMode" value="skip" checked />
+                <span>重复跳过</span>
+              </label>
+              <label>
+                <input type="radio" name="umImportDuplicateMode" value="overwrite" />
+                <span>重复覆盖</span>
+              </label>
+            </div>
+          </div>
+        </div>
+        <input class="hidden" id="umImportFile" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+      </div>
+
+      <div class="um-import-error hidden" id="umImportError"></div>
+      <div class="um-import-summary hidden" id="umImportSummary">
+        <div><span>文件名称</span><strong id="umImportFileName">-</strong></div>
+        <div><span>解析总数</span><strong id="umImportTotal">0</strong></div>
+        <div class="is-valid"><span>新增用户</span><strong id="umImportNew">0</strong></div>
+        <div class="is-duplicate"><span id="umImportDuplicateLabel">重复跳过</span><strong id="umImportDuplicate">0</strong></div>
+        <div class="is-error"><span>异常数据</span><strong id="umImportInvalid">0</strong></div>
+      </div>
+
+      <div class="um-import-complete hidden" id="umImportComplete">
+        <span class="um-import-complete-icon">✓</span>
+        <div><strong id="umImportCompleteTitle">导入完成</strong><p id="umImportCompleteText"></p></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <p class="um-import-footnote">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7h.01"/></svg>
+        <span id="umImportFootnoteText">选择文件后，将展示校验汇总</span>
+      </p>
+      <div class="um-import-foot-actions">
+        <button class="secondary-btn" type="button" id="umImportCancel" data-act="close-import">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+          <span id="umImportCancelLabel">取消</span>
+        </button>
+        <button class="primary-btn" type="button" id="umImportConfirm" data-act="confirm-import" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+          <span>确认导入</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script src="../assets/js/navigation.js"></script>
   <script src="../assets/js/common.js"></script>
   <script src="../assets/js/pagination.js"></script>
+  <script src="../assets/vendor/exceljs.min.js"></script>
+  <script src="../assets/js/excel-export.js"></script>
   <script src="../assets/js/users.js"></script>
 </body>
 </html>

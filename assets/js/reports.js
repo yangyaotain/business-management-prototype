@@ -71,13 +71,6 @@
     ["能力建设","案例贡献度","38份","31份","+22.6%","27份","+40.7%","60份","38份",63,"normal",["优秀案例 8份","有效案例 30份","参与人员 24人","已入库 32份"]],
     ["能力建设","测试通过率","96.2%","94.5%","+1.7pct","92.8%","+3.4pct","≥95%","96.2%",101,"normal",["参加测试 132人次","通过 127人次","未通过 5人次","平均分 93.6分"]]
   ];
-  const reportRecords=[
-    {id:"report-2026-07",name:"代理业务部经营月报【2026年7月】",period:"2026年7月",updatedAt:"2026-08-05 16:28",owner:"陈建",size:"1.6 MB"},
-    {id:"report-2026-06",name:"代理业务部经营月报【2026年6月】",period:"2026年6月",updatedAt:"2026-07-05 11:16",owner:"陈建",size:"1.6 MB"},
-    {id:"report-2026-05",name:"代理业务部经营月报【2026年5月】",period:"2026年5月",updatedAt:"2026-06-05 14:42",owner:"陈建",size:"1.6 MB"},
-    {id:"report-2026-04",name:"代理业务部经营月报【2026年4月】",period:"2026年4月",updatedAt:"2026-05-06 10:18",owner:"陈建",size:"1.6 MB"},
-    {id:"report-2026-03",name:"代理业务部经营月报【2026年3月】",period:"2026年3月",updatedAt:"2026-04-03 17:05",owner:"陈建",size:"1.6 MB"}
-  ];
   const detailProjectNames=[
     "华南区域生产物资框架采购","新能源场站设备集中采购","广东区域工程服务采购","智慧园区信息化设备采购",
     "燃机项目检修服务采购","年度办公设备集中采购","分布式光伏施工采购","储能电站运维服务采购",
@@ -85,16 +78,14 @@
     "热电联产工程监理采购","风电场道路维护服务采购","数字化平台升级采购","安全生产培训服务采购",
     "海上风电设备检测采购","年度后勤物业服务采购"
   ];
-  const REPORT_TEMPLATE_PATH="../assets/files/代理业务部经营月报【2026年X月】 模板（系统版）.docx";
   const generalMetricNames=["异常数量","一次通过率","质量问题数","质量问题率","客户满意度","关键节点时效","项目完成平均周期"];
   let state={
     level:"department",groupId:null,person:null,category:"全部",role:"departmentHead",
     periodType:"月度",selectedPeriods:{月度:"2026-07",季度:"2026-Q2"},businessType:"all",openMetric:null,
-    reportKeyword:"",detailMetric:null,detailKeyword:"",detailStatus:"all",detailRecords:[]
+    detailMetric:null,detailKeyword:"",detailStatus:"all",detailRecords:[]
   };
   let metricReportPagination=null;
   let detailPagination=null;
-  let reportManagementPagination=null;
   const $=id=>document.getElementById(id);
   const esc=v=>String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
   const activeGroup=()=>groups.find(g=>g.id===state.groupId)||groups[1];
@@ -106,13 +97,65 @@
   }
   function currentPeriodLabel(){return currentPeriod().label;}
   function currentPeriodYear(){return currentPeriod().value.slice(0,4);}
+  function currentPeriodProfile(){
+    const optionIndex=Math.max(0,periodOptions[state.periodType].findIndex(option=>option.value===state.selectedPeriods[state.periodType]));
+    const monthlyProfiles=[
+      {volume:1,rateDelta:0,durationDelta:0},
+      {volume:.94,rateDelta:-.4,durationDelta:.4},
+      {volume:.91,rateDelta:-.7,durationDelta:.7},
+      {volume:.89,rateDelta:-.3,durationDelta:.5},
+      {volume:.86,rateDelta:-.9,durationDelta:1.1},
+      {volume:.82,rateDelta:-1.2,durationDelta:1.4},
+      {volume:.84,rateDelta:-.8,durationDelta:.9},
+      {volume:.96,rateDelta:-.2,durationDelta:.3},
+      {volume:.92,rateDelta:-.6,durationDelta:.8},
+      {volume:.88,rateDelta:-1,durationDelta:1.2},
+      {volume:.85,rateDelta:-1.3,durationDelta:1.5},
+      {volume:.81,rateDelta:-1.5,durationDelta:1.7}
+    ];
+    const quarterlyProfiles=[
+      {volume:.84,rateDelta:.4,durationDelta:-.3},
+      {volume:.42,rateDelta:-.3,durationDelta:.5},
+      {volume:1.46,rateDelta:.1,durationDelta:.1},
+      {volume:1.08,rateDelta:-.7,durationDelta:.9}
+    ];
+    return (state.periodType==="季度"?quarterlyProfiles:monthlyProfiles)[optionIndex]||monthlyProfiles[0];
+  }
+  function formatAdjustedNumber(value,decimals){
+    return Number(value).toLocaleString("zh-CN",{
+      minimumFractionDigits:decimals,
+      maximumFractionDigits:decimals
+    });
+  }
+  function adjustIntervalValue(value,levelFactor=1){
+    const text=String(value);
+    const match=text.replace(/,/g,"").match(/-?\d+(?:\.\d+)?/);
+    if(!match)return text;
+    const profile=currentPeriodProfile();
+    const original=Number(match[0]);
+    const decimals=match[0].includes(".")?1:0;
+    let adjusted;
+    if(text.includes("%"))adjusted=original+profile.rateDelta;
+    else if(text.includes("分"))adjusted=original+profile.rateDelta*.6;
+    else if(text.includes("天"))adjusted=original+profile.durationDelta;
+    else adjusted=original*profile.volume*levelFactor;
+    return text.replace(/-?[\d,]+(?:\.\d+)?/,formatAdjustedNumber(adjusted,decimals));
+  }
   function currentBusinessTypeLabel(){
     const type=businessTypes.find(item=>item.id===state.businessType)||businessTypes[0];
     return state.businessType==="all"?"全部业务":type.label+"业务";
   }
+  function metricLevelFactor(metric){
+    return state.level==="department"||!["招标数量","成交数量"].includes(metric[1])?1:1/(state.level==="group"?3.2:12);
+  }
+  function metricIntervalValue(metric,index){
+    return adjustIntervalValue(metric[index],metricLevelFactor(metric));
+  }
   function metricCurrentValue(metric){
-    if(state.level==="department"||!["招标数量","成交数量"].includes(metric[1]))return metric[2];
-    return Math.round(parseFloat(metric[2].replace(/,/g,""))/(state.level==="group"?3.2:12))+"个";
+    return metricIntervalValue(metric,2);
+  }
+  function metricProgressValue(metric){
+    return Math.max(1,Math.min(130,Math.round(metric[9]*currentPeriodProfile().volume)));
   }
   function visibleMetrics(){
     return metrics.filter(metric=>(state.category==="全部"||metric[0]===state.category)&&metricMatchesBusiness(metric));
@@ -120,27 +163,41 @@
   function summaryData(){
     const source=state.level==="department"?{bid:630,deal:562,scale:64.5,revenue:1505,rate:"89.1%",alerts:10}:activeGroup();
     const ratio=state.level==="person"?.24:1;
+    const profile=currentPeriodProfile();
     return [
-      ["招标数量",Math.round(source.bid*ratio),"个","同比 +7.5%","",SUMMARY_ICONS.tender],
-      ["成交数量",Math.round(source.deal*ratio),"个","环比 +6.2%","",SUMMARY_ICONS.deal],
-      ["交易规模",(source.scale*ratio).toFixed(1),"亿元","同比 +10.8%","",SUMMARY_ICONS.scale],
-      ["营收",Math.round(source.revenue*ratio),"万元","环比 +4.7%","",SUMMARY_ICONS.revenue],
-      ["采购成功率",source.rate,"","高于部门均值","",SUMMARY_ICONS.success],
-      ["异常数量",Math.max(1,Math.round(source.alerts*ratio)),"项","需要跟进","alert",SUMMARY_ICONS.alert]
+      ["招标数量",Math.round(source.bid*ratio*profile.volume),"个","同比 +7.5%","",SUMMARY_ICONS.tender],
+      ["成交数量",Math.round(source.deal*ratio*profile.volume),"个","环比 +6.2%","",SUMMARY_ICONS.deal],
+      ["交易规模",(source.scale*ratio*profile.volume).toFixed(1),"亿元","同比 +10.8%","",SUMMARY_ICONS.scale],
+      ["营收",Math.round(source.revenue*ratio*profile.volume),"万元","环比 +4.7%","",SUMMARY_ICONS.revenue],
+      ["采购成功率",adjustIntervalValue(source.rate),"","高于部门均值","",SUMMARY_ICONS.success],
+      ["异常数量",Math.max(1,Math.round(source.alerts*ratio*profile.volume)),"项","需要跟进","alert",SUMMARY_ICONS.alert]
     ];
+  }
+  function periodGroupData(group){
+    const profile=currentPeriodProfile();
+    return {
+      ...group,
+      bid:Math.round(group.bid*profile.volume),
+      deal:Math.round(group.deal*profile.volume),
+      scale:Number((group.scale*profile.volume).toFixed(1)),
+      revenue:Math.round(group.revenue*profile.volume),
+      rate:adjustIntervalValue(group.rate),
+      alerts:Math.max(1,Math.round(group.alerts*profile.volume))
+    };
   }
   function groupMemberData(){
     const group=activeGroup();
     const members=state.role==="member"?["李文"]:group.members;
+    const profile=currentPeriodProfile();
     return members.map((name,index)=>({
       name,
       role:index===0?"业务组长":"项目经理",
-      bid:48+index*7,
-      deal:43+index*6,
-      scale:Number((4.8+index*.6).toFixed(1)),
-      revenue:116+index*18,
-      qualityIssues:index+1,
-      averageCycle:Number((27.4+index*.8).toFixed(1))
+      bid:Math.round((48+index*7)*profile.volume),
+      deal:Math.round((43+index*6)*profile.volume),
+      scale:Number(((4.8+index*.6)*profile.volume).toFixed(1)),
+      revenue:Math.round((116+index*18)*profile.volume),
+      qualityIssues:Math.max(1,Math.round((index+1)*profile.volume)),
+      averageCycle:Number((27.4+index*.8+profile.durationDelta).toFixed(1))
     }));
   }
   function renderControls(){
@@ -156,8 +213,8 @@
     $("reportUserAvatar").textContent=role.avatar;
     $("reportUserName").textContent=role.userName;
     $("reportUserRole").textContent=role.label;
-    $("topbarPageSubtitle").textContent=role.label+" · "+(state.level==="department"?"部门":state.level==="group"?"业务组":"个人")+"报表视图";
     $("reportPeriodBadge").textContent=currentPeriodLabel();
+    $("topbarPageSubtitle").textContent=role.label+" · "+(state.level==="department"?"部门":state.level==="group"?"业务组":"个人")+"报表视图";
     $("reportBackButton").classList.toggle("hidden",!((state.level==="group"&&state.role==="departmentHead")||(state.level==="person"&&state.role!=="member")));
   }
   function metricMatchesBusiness(metric){
@@ -167,10 +224,6 @@
     return !["能力建设"].includes(metric[0]);
   }
   function renderPath(){
-    const parts=[state.role==="departmentHead"?'<button data-level="department">代理业务部</button>':'<span>代理业务部</span>'];
-    if(state.level!=="department")parts.push("<i>/</i>",'<button data-level="group">'+esc(activeGroup().name)+"</button>");
-    if(state.level==="person")parts.push("<i>/</i>","<span>"+esc(state.person)+"</span>");
-    $("reportLevelPath").innerHTML=parts.join("");
     $("reportPageTitle").textContent=state.level==="department"?"部门经营报表":state.level==="group"?activeGroup().name+"报表":state.person+"个人报表";
     $("reportPageDescription").textContent=state.level==="department"?"查看部门及各业务组指标，点击组名进入业务组报表。":state.level==="group"?"查看业务组整体指标及组员数据，点击姓名进入个人报表。":"查看个人指标、基础组成数据及项目明细。";
   }
@@ -184,7 +237,10 @@
     if(state.level==="department"){
       $("organizationPanelTitle").textContent="业务组报表概览";$("organizationPanelDescription").textContent="横向比较各业务组核心报表指标，点击业务组名称进入本组报表。";$("organizationCount").textContent=groups.length+" 个业务组";
       $("organizationTableHead").innerHTML="<tr><th>业务组</th><th>负责人</th><th>招标数量</th><th>成交数量</th><th>交易规模</th><th>营收</th><th>采购成功率</th><th>异常数量</th></tr>";
-      $("organizationTableBody").innerHTML=groups.map(g=>'<tr><td><button type="button" class="organization-link dashboard-organization-link" data-group="'+g.id+'"><span>'+g.name+'</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button></td><td>'+g.leader+'</td><td>'+g.bid+'个</td><td>'+g.deal+'个</td><td>'+g.scale+'亿元</td><td>'+g.revenue+'万元</td><td><span class="change-up">'+g.rate+'</span></td><td><span class="'+(g.alerts>2?"change-down":"")+'">'+g.alerts+"项</span></td></tr>").join("");
+      $("organizationTableBody").innerHTML=groups.map(group=>{
+        const g=periodGroupData(group);
+        return '<tr><td><button type="button" class="organization-link dashboard-organization-link" data-group="'+g.id+'"><span>'+g.name+'</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button></td><td>'+g.leader+'</td><td>'+g.bid+'个</td><td>'+g.deal+'个</td><td>'+g.scale+'亿元</td><td>'+g.revenue+'万元</td><td><span class="change-up">'+g.rate+'</span></td><td><span class="'+(g.alerts>2?"change-down":"")+'">'+g.alerts+"项</span></td></tr>";
+      }).join("");
     }else{
       const members=groupMemberData();
       $("organizationPanelTitle").textContent="组员数据";$("organizationPanelDescription").textContent=state.role==="member"?"普通组员只显示本人数据":"点击姓名进入个人报表";$("organizationCount").textContent="共 "+members.length+" 人";
@@ -198,8 +254,8 @@
     const list=visibleMetrics();
     const paginationState=metricReportPagination.update(list);
     $("metricReportBody").innerHTML=paginationState.items.map(m=>{
-      const open=state.openMetric===m[1],current=metricCurrentValue(m);
-      return '<tr class="metric-row '+m[10]+'"><td class="sticky-name"><button class="metric-toggle '+(open?"open":"")+'" data-metric="'+m[1]+'">'+ICON+'<span>'+m[1]+'</span></button><span class="metric-name-meta">'+m[0]+' · '+scopeLabel()+'</span></td><td>'+current+'</td><td>'+m[3]+'</td><td class="mom-col '+(m[4].startsWith("-")?"change-down":"change-up")+'">'+m[4]+'</td><td>'+m[5]+'</td><td class="yoy-col '+(m[6].startsWith("-")?"change-down":"change-up")+'">'+m[6]+'</td><td>'+m[7]+'</td><td>'+m[8]+'</td><td class="progress-cell"><div class="progress-inline"><span><i style="width:'+Math.min(m[9],100)+'%"></i></span><em>'+m[9]+'%</em></div></td><td class="sticky-action"><button class="table-action" data-detail="'+m[1]+'">查看明细</button></td></tr>'+(open?'<tr class="detail-composition"><td colspan="10"><div class="composition-box">'+m[11].map(x=>{const p=x.split(" ");return '<div class="composition-item"><span>'+p[0]+'</span><strong>'+p.slice(1).join(" ")+"</strong></div>"}).join("")+"</div></td></tr>":"");
+      const open=state.openMetric===m[1],current=metricCurrentValue(m),previous=metricIntervalValue(m,3),samePeriod=metricIntervalValue(m,5),cumulative=metricIntervalValue(m,8),progress=metricProgressValue(m);
+      return '<tr class="metric-row '+m[10]+'"><td class="sticky-name"><button class="metric-toggle '+(open?"open":"")+'" data-metric="'+m[1]+'">'+ICON+'<span>'+m[1]+'</span></button><span class="metric-name-meta">'+m[0]+' · '+scopeLabel()+'</span></td><td>'+current+'</td><td>'+previous+'</td><td class="mom-col '+(m[4].startsWith("-")?"change-down":"change-up")+'">'+m[4]+'</td><td>'+samePeriod+'</td><td class="yoy-col '+(m[6].startsWith("-")?"change-down":"change-up")+'">'+m[6]+'</td><td>'+m[7]+'</td><td>'+cumulative+'</td><td class="progress-cell"><div class="progress-inline"><span><i style="width:'+Math.min(progress,100)+'%"></i></span><em>'+progress+'%</em></div></td><td class="sticky-action"><button class="table-action" data-detail="'+m[1]+'">查看明细</button></td></tr>'+(open?'<tr class="detail-composition"><td colspan="10"><div class="composition-box">'+m[11].map(x=>{const p=x.split(" ");return '<div class="composition-item"><span>'+p[0]+'</span><strong>'+p.slice(1).join(" ")+"</strong></div>"}).join("")+"</div></td></tr>":"");
     }).join("");
   }
   function exportOverviewMetadata(){
@@ -215,114 +271,19 @@
     ];
   }
   function appendStyledExportSheet(workbook,name,config){
-    const {title,metadata=[],headers,rows,widths}=config;
-    const worksheet=workbook.addWorksheet(name);
-    const borderColor={argb:"FFD0D5DD"};
-    const thinBorder={
-      top:{style:"thin",color:borderColor},
-      left:{style:"thin",color:borderColor},
-      bottom:{style:"thin",color:borderColor},
-      right:{style:"thin",color:borderColor}
-    };
-    worksheet.properties.defaultRowHeight=20;
-    worksheet.pageSetup={
-      paperSize:9,
-      orientation:headers.length>8?"landscape":"portrait",
-      fitToPage:true,
-      fitToWidth:1,
-      fitToHeight:0,
-      margins:{left:.35,right:.35,top:.5,bottom:.5,header:.2,footer:.2}
-    };
-    widths.forEach((width,index)=>{worksheet.getColumn(index+1).width=width});
-
-    const titleRow=worksheet.addRow([title]);
-    worksheet.mergeCells(titleRow.number,1,titleRow.number,headers.length);
-    titleRow.height=30;
-    const titleCell=titleRow.getCell(1);
-    titleCell.font={name:"Microsoft YaHei",size:15,bold:true,color:{argb:"FFFFFFFF"}};
-    titleCell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF1F4E78"}};
-    titleCell.alignment={horizontal:"center",vertical:"middle"};
-    for(let column=1;column<=headers.length;column+=1){
-      const cell=titleRow.getCell(column);
-      cell.border=thinBorder;
-      cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF1F4E78"}};
-    }
-
-    metadata.forEach(([label,value])=>{
-      const row=worksheet.addRow([label,value]);
-      if(headers.length>2)worksheet.mergeCells(row.number,2,row.number,headers.length);
-      row.height=21;
-      for(let column=1;column<=headers.length;column+=1){
-        const cell=row.getCell(column);
-        cell.font={name:"Microsoft YaHei",size:10,color:{argb:"FF344054"},bold:column===1};
-        cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:column===1?"FFD9EAF7":"FFFFFFFF"}};
-        cell.alignment={horizontal:column===1?"center":"left",vertical:"middle"};
-        cell.border=thinBorder;
-      }
-    });
-    if(metadata.length){
-      const spacer=worksheet.addRow([]);
-      spacer.height=8;
-    }
-
-    const headerRow=worksheet.addRow(headers);
-    headerRow.height=24;
-    for(let column=1;column<=headers.length;column+=1){
-      const cell=headerRow.getCell(column);
-      cell.font={name:"Microsoft YaHei",size:10,bold:true,color:{argb:"FFFFFFFF"}};
-      cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF4472C4"}};
-      cell.alignment={horizontal:"center",vertical:"middle",wrapText:true};
-      cell.border=thinBorder;
-    }
-
-    rows.forEach((values,index)=>{
-      const row=worksheet.addRow(values);
-      row.height=21;
-      for(let column=1;column<=headers.length;column+=1){
-        const cell=row.getCell(column);
-        cell.font={name:"Microsoft YaHei",size:10,color:{argb:"FF344054"}};
-        cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:index%2===0?"FFFFFFFF":"FFF7F9FC"}};
-        cell.alignment={
-          horizontal:typeof cell.value==="number"?"right":"left",
-          vertical:"middle",
-          wrapText:true
-        };
-        cell.border=thinBorder;
-      }
-      const statusColumn=headers.indexOf("指标状态")+1;
-      if(statusColumn>0&&["需关注","异常"].includes(row.getCell(statusColumn).value)){
-        const statusCell=row.getCell(statusColumn);
-        statusCell.font={name:"Microsoft YaHei",size:10,bold:true,color:{argb:"FFB42318"}};
-        statusCell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFFEE4E2"}};
-        statusCell.alignment={horizontal:"center",vertical:"middle"};
-      }
-    });
-
-    worksheet.views=[{state:"frozen",xSplit:0,ySplit:headerRow.number}];
-    worksheet.autoFilter={
-      from:{row:headerRow.number,column:1},
-      to:{row:Math.max(headerRow.number,worksheet.rowCount),column:headers.length}
-    };
-    worksheet.headerFooter.oddFooter="第 &P 页 / 共 &N 页";
+    return window.AppExcelExport.appendStyledSheet(workbook,name,config);
   }
   async function downloadExcelWorkbook(workbook,fileName){
-    const workbookBuffer=await workbook.xlsx.writeBuffer();
-    const workbookBlob=new Blob([workbookBuffer],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
-    const downloadUrl=URL.createObjectURL(workbookBlob);
-    const downloadLink=document.createElement("a");
-    downloadLink.href=downloadUrl;
-    downloadLink.download=fileName;
-    downloadLink.style.display="none";
-    document.body.appendChild(downloadLink);
-    downloadLink.click();
-    downloadLink.remove();
-    window.setTimeout(()=>URL.revokeObjectURL(downloadUrl),1000);
+    return window.AppExcelExport.downloadWorkbook(workbook,fileName);
   }
   function organizationExportData(){
     if(state.level==="department"){
       return {
         headers:["业务组","负责人","招标数量（个）","成交数量（个）","交易规模（亿元）","营收（万元）","采购成功率","异常数量（项）"],
-        rows:groups.map(group=>[group.name,group.leader,group.bid,group.deal,group.scale,group.revenue,group.rate,group.alerts]),
+        rows:groups.map(group=>{
+          const item=periodGroupData(group);
+          return [item.name,item.leader,item.bid,item.deal,item.scale,item.revenue,item.rate,item.alerts];
+        }),
         widths:[18,12,16,16,18,16,16,16]
       };
     }
@@ -379,8 +340,8 @@
         title:"指标明细",
         headers:["数据范围","指标分类","指标名称","当前区间值","上期值","环比","同期值","同比","年度目标","年度累计","完成进度","指标状态"],
         rows:metricList.map(metric=>[
-          scopeLabel(),metric[0],metric[1],metricCurrentValue(metric),metric[3],metric[4],metric[5],metric[6],
-          metric[7],metric[8],metric[9]+"%",metric[10]==="abnormal"?"需关注":"正常"
+          scopeLabel(),metric[0],metric[1],metricCurrentValue(metric),metricIntervalValue(metric,3),metric[4],metricIntervalValue(metric,5),metric[6],
+          metric[7],metricIntervalValue(metric,8),metricProgressValue(metric)+"%",metric[10]==="abnormal"?"需关注":"正常"
         ]),
         widths:[18,14,26,16,14,12,14,12,14,14,14,12]
       });
@@ -416,110 +377,9 @@
   }
   function destroyOverlayPaginators(){
     if(detailPagination){detailPagination.destroy();detailPagination=null}
-    if(reportManagementPagination){reportManagementPagination.destroy();reportManagementPagination=null}
   }
   function modal(content,foot){destroyOverlayPaginators();$("reportOverlayRoot").innerHTML='<div class="modal-mask" data-close-overlay></div><section class="modal wide-modal" role="dialog" aria-modal="true">'+content+(foot?'<div class="modal-foot">'+foot+"</div>":"")+"</section>";document.body.style.overflow="hidden"}
   function closeOverlay(){destroyOverlayPaginators();$("reportOverlayRoot").innerHTML="";document.body.style.overflow=""}
-  function visibleReportRecords(){
-    const role=activeRole();
-    const reportScope=role.id==="departmentHead"?"全部":role.id==="groupLeader"?activeGroup().name:role.userName;
-    return reportRecords.filter(report=>!state.reportKeyword||report.name.includes(state.reportKeyword)||report.period.includes(state.reportKeyword)||reportScope.includes(state.reportKeyword));
-  }
-  function managedReportScope(){
-    const role=activeRole();
-    return role.id==="departmentHead"?"全部":role.id==="groupLeader"?activeGroup().name:role.userName;
-  }
-  function reportRowsHTML(records){
-    const reportScope=managedReportScope();
-    if(!records.length)return '<tr><td colspan="6"><div class="report-management-empty"><strong>未找到匹配报告</strong><span>请调整报告名称或统计周期后重试。</span></div></td></tr>';
-    return records.map(report=>[
-      "<tr><td><div class=\"managed-report-name\"><span>",
-      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"/><path d="M14 3v5h5M9 12h6M9 16h6"/></svg>',
-      "</span><div><strong>",esc(report.name),"</strong><small>Word 文档 · ",esc(report.size),"</small></div></div></td>",
-      "<td>",esc(report.period),"</td><td>",esc(reportScope),"</td><td>",esc(report.updatedAt),"</td><td>",esc(report.owner),"</td>",
-      '<td><div class="managed-report-actions"><button type="button" class="table-action" data-report-preview="',report.id,'">',
-      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.5"/></svg>预览</button>',
-      '<button type="button" class="table-action" data-report-export="',report.id,'">',
-      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>导出</button></div></td></tr>'
-    ].join("")).join("");
-  }
-  function renderReportManagementRows(){
-    const body=$("managedReportTableBody");
-    const count=$("managedReportCount");
-    if(!body||!count||!reportManagementPagination)return;
-    const records=visibleReportRecords();
-    const paginationState=reportManagementPagination.update(records);
-    body.innerHTML=reportRowsHTML(paginationState.items);
-    count.textContent=records.length+"份报告";
-  }
-  function openReportManagement(){
-    state.reportKeyword="";
-    modal(
-      '<div class="modal-head"><div><h3>报告管理</h3><p>统一查看、预览和导出当前权限范围内的报告。</p></div><button class="modal-close" data-close-overlay aria-label="关闭">×</button></div>'+
-      '<div class="modal-body report-management-body">'+
-      '<div class="report-management-toolbar"><label class="report-management-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="reportManagementSearch" type="search" placeholder="搜索报告名称、周期或范围" autocomplete="off"></label><span id="managedReportCount"></span></div>'+
-      '<div class="report-table-wrap"><table class="report-table managed-report-table"><thead><tr><th>报告名称</th><th>统计周期</th><th>数据范围</th><th>更新时间</th><th>更新人</th><th>操作</th></tr></thead><tbody id="managedReportTableBody"></tbody></table></div>'+
-      '<div class="app-pagination hidden" id="managedReportPagination" aria-label="报告管理分页"></div>'+
-      '</div>',
-      '<button class="ghost-btn" data-close-overlay><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>关闭</button>'
-    );
-    reportManagementPagination=window.AppPagination.create({
-      container:$("managedReportPagination"),
-      variant:"table",
-      itemLabel:"份",
-      onChange:renderReportManagementRows
-    });
-    renderReportManagementRows();
-  }
-  function openReportPreview(reportId){
-    const report=reportRecords.find(item=>item.id===reportId);
-    if(!report)return;
-    const previewUrl=new URL("report-word-preview.html",window.location.href);
-    previewUrl.searchParams.set("reportId",report.id);
-    previewUrl.searchParams.set("name",report.name);
-    const previewWindow=window.open(previewUrl,"_blank");
-    if(!previewWindow){
-      window.showToast("浏览器已拦截新标签页，请允许弹出窗口后重试");
-      return;
-    }
-    previewWindow.opener=null;
-  }
-  async function exportReport(reportId){
-    const report=reportRecords.find(item=>item.id===reportId);
-    if(!report)return;
-    const fileName=report.name.replace(/[\\/:*?"<>|]/g,"-")+".docx";
-    const templateUrl=new URL(REPORT_TEMPLATE_PATH,window.location.href);
-    window.showToast("正在准备“"+fileName+"”");
-    try{
-      const response=await fetch(templateUrl.href,{cache:"no-store"});
-      if(!response.ok)throw new Error("Template request failed: "+response.status);
-      const templateBlob=await response.blob();
-      const downloadUrl=URL.createObjectURL(templateBlob);
-      const downloadLink=document.createElement("a");
-      downloadLink.href=downloadUrl;
-      downloadLink.download=fileName;
-      downloadLink.style.display="none";
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      downloadLink.remove();
-      window.setTimeout(()=>URL.revokeObjectURL(downloadUrl),1000);
-      window.showToast("已开始下载“"+fileName+"”");
-    }catch(error){
-      if(window.location.protocol==="file:"){
-        const downloadLink=document.createElement("a");
-        downloadLink.href=templateUrl.href;
-        downloadLink.download=fileName;
-        downloadLink.style.display="none";
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        downloadLink.remove();
-        window.showToast("已开始下载“"+fileName+"”");
-        return;
-      }
-      console.error("Word report export failed",error);
-      window.showToast("Word 报告下载失败，请稍后重试","error");
-    }
-  }
   function detailMetricValue(metricName,index){
     if(metricName==="异常数量")return index%5===2?"1项":"0项";
     if(metricName==="交易规模")return (0.8+(index%8)*0.36).toFixed(1)+"亿元";
@@ -712,22 +572,25 @@
     state.openMetric=null;
     metricReportPagination.reset();
   }
-  function render(){renderControls();renderPath();renderSummary();renderOrganization();renderMetrics()}
+  function render(){
+    renderControls();
+    renderPath();
+    renderSummary();
+    renderOrganization();
+    renderMetrics();
+  }
   document.addEventListener("click",e=>{
-    const group=e.target.closest("[data-group]"),person=e.target.closest("[data-person]"),level=e.target.closest("[data-level]"),cat=e.target.closest("[data-category]"),roleButton=e.target.closest("[data-role-id]"),periodButton=e.target.closest("[data-period-type]"),toggle=e.target.closest("[data-metric]"),detail=e.target.closest("[data-detail]"),reportPreview=e.target.closest("[data-report-preview]"),reportExport=e.target.closest("[data-report-export]");
+    const group=e.target.closest("[data-group]"),person=e.target.closest("[data-person]"),level=e.target.closest("[data-level]"),cat=e.target.closest("[data-category]"),roleButton=e.target.closest("[data-role-id]"),periodButton=e.target.closest("[data-period-type]"),toggle=e.target.closest("[data-metric]"),detail=e.target.closest("[data-detail]");
     if(group&&state.role==="departmentHead"){state.level="group";state.groupId=group.dataset.group;state.person=null;metricReportPagination.reset();render()}
     else if(person&&state.role!=="member"){state.level="person";state.person=person.dataset.person;metricReportPagination.reset();render()}
     else if(level&&level.dataset.level==="department"&&state.role==="departmentHead"){state.level="department";state.groupId=null;state.person=null;metricReportPagination.reset();render()}
     else if(level&&level.dataset.level==="group"&&state.role!=="member"){state.level="group";state.person=null;metricReportPagination.reset();render()}
     else if(cat){state.category=cat.dataset.category;state.openMetric=null;metricReportPagination.reset();renderMetrics()}
-    else if(roleButton){applyRole(roleButton.dataset.roleId);render();window.showToast("已切换为："+activeRole().label+"视角")}
-    else if(periodButton&&periodButton.dataset.periodType!==state.periodType){state.periodType=periodButton.dataset.periodType;metricReportPagination.reset();render();window.showToast("已切换为："+state.periodType+"经营报表")}
+    else if(roleButton&&roleButton.dataset.roleId!==state.role){applyRole(roleButton.dataset.roleId);render()}
+    else if(periodButton&&periodButton.dataset.periodType!==state.periodType){state.periodType=periodButton.dataset.periodType;state.openMetric=null;metricReportPagination.reset();render()}
     else if(toggle){state.openMetric=state.openMetric===toggle.dataset.metric?null:toggle.dataset.metric;renderMetrics()}
     else if(detail)openDetail(detail.dataset.detail);
-    else if(reportPreview)openReportPreview(reportPreview.dataset.reportPreview);
-    else if(reportExport)exportReport(reportExport.dataset.reportExport);
     else if(e.target.closest("#reportBackButton"))goBack();
-    else if(e.target.closest("#manageReportButton"))openReportManagement();
     else if(e.target.closest("#exportDataButton"))exportCurrentData();
     else if(e.target.closest("#detailSearchButton")){
       state.detailKeyword=$("detailKeywordInput").value.trim();
@@ -746,14 +609,8 @@
     else if(e.target.closest("#drawerExportButton"))exportDetailData();
     else if(e.target.closest("[data-close-overlay]"))closeOverlay();
   });
-  document.addEventListener("input",e=>{
-    if(e.target.id!=="reportManagementSearch")return;
-    state.reportKeyword=e.target.value.trim();
-    reportManagementPagination.reset();
-    renderReportManagementRows();
-  });
-  $("reportPeriodSelect").addEventListener("change",e=>{state.selectedPeriods[state.periodType]=e.target.value;metricReportPagination.reset();render();window.showToast("统计周期已切换为："+currentPeriodLabel())});
-  $("reportBusinessTypeSelect").addEventListener("change",e=>{state.businessType=e.target.value;state.category="全部";state.openMetric=null;metricReportPagination.reset();render();const type=businessTypes.find(item=>item.id===state.businessType);window.showToast("业务类型已切换为："+(state.businessType==="all"?"全部业务":type.label+"业务"))});
+  $("reportPeriodSelect").addEventListener("change",e=>{state.selectedPeriods[state.periodType]=e.target.value;state.openMetric=null;metricReportPagination.reset();render()});
+  $("reportBusinessTypeSelect").addEventListener("change",e=>{state.businessType=e.target.value;state.category="全部";state.openMetric=null;metricReportPagination.reset();render()});
   document.addEventListener("keydown",e=>{
     if(e.key==="Escape")closeOverlay();
     else if(e.key==="Enter"&&e.target.id==="detailKeywordInput"){
