@@ -1119,7 +1119,8 @@ function checkSystemManagementPages() {
     "function-column-head",
     "无独立按钮权限",
     "function syncFunctionCheckboxStates(",
-    "function findFunctionNode("
+    "function findFunctionNode(",
+    'makeRole("r6", "普通组员", "个人经营查看与本人绩效维护权限", 12, memberFunctionIds)'
   ];
   for (const marker of requiredRoleFeatures) {
     if (!rolesSource.includes(marker)) {

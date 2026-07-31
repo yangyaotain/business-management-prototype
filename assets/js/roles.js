@@ -110,6 +110,21 @@
     "group.business",
     "menu.performance"
   ]);
+  const memberFunctionIds = [
+    ...menuPermissionIds("menu.dashboard", ["menu.dashboard.detail"]),
+    ...permissionIds([
+      "business.efficiency",
+      "business.operation"
+    ]),
+    ...menuPermissionIds("business.reports", ["business.reports.detail"]),
+    ...menuPermissionIds("business.reportDocuments", ["business.reportDocuments.preview"]),
+    ...menuPermissionIds("business.customerEvaluation", ["business.customerEvaluation.detail"]),
+    ...menuPermissionIds("menu.performance", [
+      "menu.performance.detail",
+      "menu.performance.configure",
+      "menu.performance.adjustTarget"
+    ])
+  ];
   const qualityReviewFunctionIds = permissionIds([
     "menu.dashboard",
     "business.reports",
@@ -121,10 +136,11 @@
     ["menu.performance.detail"]
   ));
 
-  let roleSequence = 6;
+  let roleSequence = 7;
   let roles = [
     makeRole("r1", "项目经理", "项目经营与专项执行权限", 8, businessFunctionIds),
     makeRole("r2", "业务组长", "经营管理与团队绩效权限", 6, businessLeaderFunctionIds),
+    makeRole("r6", "普通组员", "个人经营查看与本人绩效维护权限", 12, memberFunctionIds),
     makeRole("r3", "质量审核", "报告、客户评价与结果审核权限", 4, qualityReviewFunctionIds),
     makeRole("r4", "部门负责人", "部门经营与绩效全局权限", 3, businessFunctionIds),
     makeRole("r5", "系统管理员", "系统配置与全域功能权限", 2, allFunctionIds)
